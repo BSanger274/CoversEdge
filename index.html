@@ -1,0 +1,3412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CoversEdge — NCAAM Line Comparison</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #0a0e14;
+  --paper: #f5f0e8;
+  --cream: #ede8dc;
+  --line: #c8bfa8;
+  --accent: #d4380d;
+  --gold: #b8860b;
+  --sharp: #1a472a;
+  --soft: #7a6a5a;
+  --green: #2d7a45;
+  --red: #c0392b;
+  --flag: #e8b84b;
+  --shadow: rgba(10,14,20,0.12);
+  --toggle-bg: #0a0e14;
+}
+
+body.dark {
+  --ink: #e8e0d0;
+  --paper: #0f1318;
+  --cream: #161c24;
+  --line: #2a3340;
+  --accent: #ff5a2c;
+  --gold: #f5c842;
+  --sharp: #2ecc71;
+  --soft: #7a8a9a;
+  --green: #27ae60;
+  --red: #e74c3c;
+  --flag: #f0c040;
+  --shadow: rgba(0,0,0,0.4);
+  --toggle-bg: #e8e0d0;
+}
+
+body.dark::before {
+  opacity: 0.015;
+  filter: invert(1);
+}
+
+/* ── DARK MODE TOGGLE ── */
+.dark-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+.dark-toggle-label {
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--soft);
+  white-space: nowrap;
+}
+.dark-toggle-track {
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+  background: var(--line);
+  position: relative;
+  transition: background 0.25s ease;
+  border: 1px solid var(--line);
+  flex-shrink: 0;
+}
+body.dark .dark-toggle-track {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.dark-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--paper);
+  transition: transform 0.25s cubic-bezier(.4,0,.2,1), background 0.25s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+body.dark .dark-toggle-thumb {
+  transform: translateX(16px);
+  background: #fff;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'IBM Plex Mono', monospace;
+  min-height: 100vh;
+}
+
+/* Textured paper background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+
+.wrap { position: relative; z-index: 1; max-width: 1440px; margin: 0 auto; padding: 0 24px 60px; }
+
+/* ── HEADER ── */
+header {
+  border-bottom: 3px solid var(--ink);
+  padding: 20px 0 16px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.masthead { display: flex; flex-direction: column; }
+.wordmark {
+  font-family: 'Syne', sans-serif;
+  font-size: 2.6rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--ink);
+}
+.wordmark em { color: var(--accent); font-style: normal; }
+.tagline {
+  font-size: 0.65rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--soft);
+  margin-top: 4px;
+}
+
+.header-meta {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.live-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 5px 12px;
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.dot { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; animation: blink 1.4s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* ── API SETUP ── */
+.api-bar {
+  background: var(--ink);
+  color: var(--paper);
+  padding: 14px 20px;
+  margin: 20px 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  border: 2px solid var(--ink);
+}
+
+.api-bar label {
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--flag);
+}
+
+.api-bar input {
+  flex: 1;
+  min-width: 240px;
+  background: rgba(245,240,232,0.1);
+  border: 1px solid rgba(245,240,232,0.25);
+  color: var(--paper);
+  padding: 7px 12px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  outline: none;
+}
+
+.api-bar input::placeholder { color: rgba(245,240,232,0.35); }
+.api-bar input:focus { border-color: var(--flag); }
+
+body.dark .api-bar {
+  background: rgba(245,240,232,0.92);
+  border-color: rgba(245,240,232,0.92);
+}
+body.dark .api-bar label {
+  color: #0a0e14;
+}
+body.dark .api-bar input {
+  background: rgba(10,14,20,0.08);
+  border-color: rgba(10,14,20,0.3);
+  color: var(--ink);
+}
+body.dark .api-bar input::placeholder { color: rgba(10,14,20,0.4); }
+body.dark .api-bar input:focus { border-color: var(--flag); }
+
+.btn {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 8px 20px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s;
+}
+
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover { background: #b02d09; }
+.btn-demo { background: var(--flag); color: var(--ink); }
+.btn-demo:hover { background: #d4a838; }
+
+.api-note {
+  font-size: 0.6rem;
+  color: rgba(245,240,232,0.4);
+  letter-spacing: 0.08em;
+  line-height: 1.5;
+}
+body.dark .api-note {
+  color: rgba(10,14,20,0.75);
+}
+
+/* ── FILTER BAR ── */
+/* ── CONFERENCE FILTER ── */
+.conf-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 0 4px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 8px;
+}
+.conf-btn {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border: 1.5px solid var(--line);
+  background: transparent;
+  color: var(--soft);
+  cursor: pointer;
+  border-radius: 3px;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.conf-btn:hover { background: var(--cream); color: var(--ink); border-color: var(--ink); }
+.conf-btn.active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin: 0 0 20px;
+  border: 2px solid var(--ink);
+  overflow: hidden;
+  width: max-content;
+}
+
+.filter-btn {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 8px 18px;
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--line);
+  cursor: pointer;
+  color: var(--soft);
+  transition: all 0.15s;
+}
+.filter-btn:last-child { border-right: none; }
+.filter-btn:hover { background: var(--cream); color: var(--ink); }
+.filter-btn.active { background: var(--ink); color: var(--paper); }
+
+/* ── CONTROLS ── */
+.controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.section-head {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--soft);
+}
+
+.threshold-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  color: var(--soft);
+  text-transform: uppercase;
+}
+
+.threshold-wrap input[type=range] { width: 100px; accent-color: var(--accent); }
+#thresh-val { font-weight: 700; color: var(--accent); min-width: 24px; }
+
+/* ── GAME TABLE ── */
+.games-table { width: 100%; border-collapse: collapse; }
+
+/* Column headers */
+.col-headers { border-bottom: 3px solid var(--ink); }
+.col-headers th {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--soft);
+  padding: 8px 10px;
+  text-align: center;
+  border-left: 1px solid var(--line);
+  white-space: nowrap;
+}
+.col-headers th:first-child { text-align: left; border-left: none; }
+
+/* Book sub-headers */
+.book-headers th {
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 5px 8px;
+  text-align: center;
+  border-left: 1px solid var(--line);
+  background: var(--cream);
+  border-bottom: 2px solid var(--line);
+  color: var(--soft);
+  white-space: nowrap;
+}
+
+/* Game rows */
+.game-group td {
+  padding: 0;
+  border-left: 1px solid var(--line);
+  vertical-align: middle;
+}
+.game-group td:first-child { border-left: none; }
+.game-group:hover .game-meta { background: rgba(10,14,20,0.03); }
+
+.game-meta {
+  padding: 0;
+  min-width: 180px;
+  background: var(--paper);
+  border-right: 2px solid var(--ink) !important;
+}
+
+.game-meta-inner {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.matchup {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+.game-time-tag {
+  font-size: 0.58rem;
+  color: var(--soft);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-top: 3px;
+  display: block;
+}
+
+.row-label {
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--soft);
+  padding: 5px 14px;
+}
+
+/* Market rows */
+.market-row td {
+  border-bottom: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+  padding: 0;
+  height: 34px;
+}
+.market-row td:first-child { border-left: none; }
+.market-row:last-child td { border-bottom: 2px solid var(--ink); }
+
+.cell-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  padding: 6px 12px;
+  min-width: 78px;
+  position: relative;
+  transition: background 0.15s;
+}
+
+.cell-spread { font-size: 0.82rem; font-weight: 500; letter-spacing: -0.01em; line-height: 1; }
+.cell-juice { font-size: 0.58rem; color: var(--soft); margin-top: 2px; }
+
+/* Value highlighting */
+.best-cell { background: rgba(45,122,69,0.12); }
+.best-cell .cell-spread { color: var(--green); font-weight: 700; }
+
+.worst-cell { background: rgba(192,57,43,0.08); }
+.worst-cell .cell-spread { color: var(--red); }
+
+.flag-cell { background: rgba(232,184,75,0.18); }
+.flag-cell .cell-spread { color: var(--gold); font-weight: 700; }
+
+/* Variance badge in game meta */
+.var-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  margin-top: 5px;
+}
+
+.var-high { background: var(--accent); color: white; }
+.var-mid { background: var(--flag); color: var(--ink); }
+.var-low { background: rgba(10,14,20,0.08); color: var(--soft); }
+
+/* Covers column styling */
+.covers-col { background: rgba(180,130,50,0.06); }
+.covers-col .cell-inner { border-left: 2px solid var(--gold) !important; }
+body.dark .covers-col { background: rgba(245,200,66,0.07); }
+body.dark .covers-col .cell-inner { border-left: 3px solid var(--gold) !important; }
+.covers-edge-text { font-weight: 700; }
+body:not(.dark) .covers-edge-text { color: inherit; }
+body.dark .covers-edge-text { color: #ffffff !important; }
+
+
+/* ── TEAM LOGOS ── */
+.matchup-inner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.team-logo-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  flex-shrink: 0;
+}
+.team-logo-wrap svg {
+  display: block;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px var(--shadow);
+}
+
+/* ── ANIMATED COUNTERS ── */
+/* Line moves better (more points for bettor) → slides UP into view */
+@keyframes slideUpIn {
+  0%   { transform: translateY(10px); opacity: 0; }
+  100% { transform: translateY(0);    opacity: 1; }
+}
+/* Line moves worse (fewer points for bettor) → slides DOWN into view */
+@keyframes slideDownIn {
+  0%   { transform: translateY(-10px); opacity: 0; }
+  100% { transform: translateY(0);     opacity: 1; }
+}
+/* Flash green briefly when moving better */
+@keyframes flashGreen {
+  0%   { background: rgba(45,180,90,0.0); }
+  30%  { background: rgba(45,180,90,0.35); }
+  100% { background: rgba(45,180,90,0.0); }
+}
+/* Flash red briefly when moving worse */
+@keyframes flashRed {
+  0%   { background: rgba(192,57,43,0.0); }
+  30%  { background: rgba(192,57,43,0.3); }
+  100% { background: rgba(192,57,43,0.0); }
+}
+.cell-spread.slide-up {
+  animation: slideUpIn 0.45s cubic-bezier(.2,.8,.3,1) forwards;
+}
+.cell-spread.slide-down {
+  animation: slideDownIn 0.45s cubic-bezier(.2,.8,.3,1) forwards;
+}
+.cell-inner.flash-green { animation: flashGreen 1.0s ease forwards; }
+.cell-inner.flash-red   { animation: flashRed   1.0s ease forwards; }
+
+/* ── DETAIL PANEL ── */
+.game-group { cursor: pointer; }
+.game-group:hover .game-meta-inner { background: rgba(10,14,20,0.04); }
+.detail-row { display: none; }
+.detail-row.open { display: table-row; }
+.detail-panel {
+  background: var(--cream);
+  border-top: 2px solid var(--ink);
+  border-bottom: 2px solid var(--line);
+  padding: 16px 20px;
+}
+.detail-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--soft);
+  margin-bottom: 10px;
+}
+.history-grid {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.history-book {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  padding: 8px 12px;
+  min-width: 100px;
+}
+.history-book-name {
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--soft);
+  margin-bottom: 4px;
+}
+.history-entries {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.history-entry {
+  font-size: 0.68rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.history-entry .h-time { color: var(--soft); font-size: 0.55rem; }
+.history-entry .h-val { font-weight: 500; }
+.history-entry.h-open { color: var(--soft); }
+.history-entry.h-current { color: var(--ink); font-weight: 700; }
+.history-entry.h-moved-better .h-val { color: var(--green); }
+.history-entry.h-moved-worse  .h-val { color: var(--red); }
+
+/* Best book highlight */
+.best-book-cell { background: rgba(30,80,160,0.08); }
+.best-book-cell .cell-spread { color: #1a50a0; font-weight: 700; }
+
+/* Movement arrows */
+.move-up   { font-size:0.6rem; font-weight:700; color:#c0392b; margin-left:2px; }
+.move-down { font-size:0.6rem; font-weight:700; color:#2d7a45; margin-left:2px; }
+
+/* Delta column */
+
+
+/* Group separator */
+.group-sep td { height: 10px; background: var(--cream); border: none !important; }
+
+/* Sorting / status */
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  color: var(--soft);
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.status-count strong { color: var(--accent); }
+.last-fetch { text-transform: uppercase; }
+
+/* Loading/empty states */
+.state-panel {
+  text-align: center;
+  padding: 60px 20px;
+  border: 2px dashed var(--line);
+  margin: 20px 0;
+  background: var(--cream);
+}
+
+.state-panel h3 {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 800;
+  margin-bottom: 10px;
+  letter-spacing: -0.02em;
+}
+
+.state-panel p {
+  font-size: 0.72rem;
+  color: var(--soft);
+  line-height: 1.6;
+  letter-spacing: 0.04em;
+  max-width: 480px;
+  margin: 0 auto 16px;
+}
+
+.spinner {
+  width: 36px; height: 36px;
+  border: 3px solid var(--line);
+  border-top-color: var(--ink);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin: 0 auto 16px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Legend */
+.legend {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin: 20px 0 0;
+  padding: 12px 16px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--soft);
+}
+
+.legend-item { display: flex; align-items: center; gap: 6px; }
+.swatch { width: 14px; height: 14px; border-radius: 2px; }
+.sw-best { background: rgba(45,122,69,0.3); border: 1px solid var(--green); }
+.sw-worst { background: rgba(192,57,43,0.15); border: 1px solid var(--red); }
+.sw-covers { background: rgba(180,130,50,0.15); border: 1px solid var(--gold); }
+.sw-flag { background: rgba(232,184,75,0.3); border: 1px solid var(--gold); }
+
+/* Scroll wrapper */
+.table-scroll { overflow-x: auto; }
+.table-scroll::-webkit-scrollbar { height: 6px; }
+.table-scroll::-webkit-scrollbar-track { background: var(--cream); }
+.table-scroll::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
+
+/* Sort header arrows */
+.sort-col { cursor: pointer; user-select: none; }
+.sort-col:hover { color: var(--ink); }
+.sort-col::after { content: ' ↕'; opacity: 0.4; font-size: 0.5rem; }
+.sort-col.asc::after { content: ' ↑'; opacity: 1; color: var(--accent); }
+.sort-col.desc::after { content: ' ↓'; opacity: 1; color: var(--accent); }
+
+/* Toast notifications */
+.toast {
+  position: fixed;
+  bottom: 20px; right: 20px;
+  color: white;
+  padding: 12px 20px;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  max-width: 320px;
+  z-index: 999;
+  animation: toastin 0.3s ease;
+  display: none;
+}
+.toast.toast-error  { background: var(--red);   border-left: 4px solid #8b0000; }
+.toast.toast-success{ background: #1a6e3a;       border-left: 4px solid #4ade80; }
+@keyframes toastin { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+
+@media (max-width: 700px) {
+  .wordmark { font-size: 1.8rem; }
+  header { padding: 14px 0 12px; }
+  .cell-inner { min-width: 56px; }
+  .wrap { padding: 0 12px 40px; }
+  .header-meta { gap: 10px; }
+  .conf-filter-bar { gap: 4px; }
+  .conf-btn { font-size: 0.52rem; padding: 3px 7px; }
+  .filter-btn { font-size: 0.58rem; padding: 5px 10px; }
+  .controls-row { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .api-bar { flex-wrap: wrap; }
+
+  /* Hide desktop table on mobile */
+  .table-scroll { display: none; }
+
+  /* Show mobile cards */
+  .mobile-cards { display: flex; flex-direction: column; gap: 12px; }
+}
+
+/* Mobile cards — hidden on desktop */
+.mobile-cards { display: none; }
+
+.game-card {
+  background: var(--cream);
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.game-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid var(--line);
+  gap: 8px;
+}
+.game-card-matchup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+.game-card-teams {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--ink);
+}
+.game-card-meta {
+  font-size: 0.52rem;
+  letter-spacing: 0.08em;
+  color: var(--soft);
+  margin-top: 2px;
+  text-transform: uppercase;
+}
+.game-card-covers {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 6px;
+  min-width: 56px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.game-card-covers .cvr-num {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 800;
+  line-height: 1;
+}
+.game-card-covers .cvr-label {
+  font-size: 0.44rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-top: 3px;
+  opacity: 0.75;
+}
+.game-card-covers .cvr-edge {
+  font-size: 0.5rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: 2px;
+  font-weight: 700;
+}
+.game-card-books {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--line);
+  border-top: 1px solid var(--line);
+}
+.game-card-book {
+  background: var(--paper);
+  padding: 7px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+.game-card-book .bk-name {
+  font-size: 0.44rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--soft);
+}
+.game-card-book .bk-spread {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1;
+}
+.game-card-book .bk-juice {
+  font-size: 0.48rem;
+  color: var(--soft);
+}
+.game-card-book.bk-best { background: rgba(45,122,69,0.12); }
+.game-card-book.bk-best .bk-spread { color: var(--green); }
+.game-card-book.bk-flagged { background: rgba(232,184,75,0.18); }
+.game-card-book.bk-flagged .bk-spread { color: var(--gold); }
+.game-card-delta {
+  padding: 5px 12px;
+  border-top: 1px solid var(--line);
+  font-size: 0.52rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--soft);
+  display: flex;
+  justify-content: space-between;
+}
+.game-card-delta span { color: var(--ink); font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- HEADER -->
+<header>
+  <div class="masthead">
+    <div class="wordmark">COVERS<em>EDGE</em></div>
+    <div class="tagline">NCAAM Line Comparison · Covers Consensus vs Sharp Market</div>
+  </div>
+  <div class="header-meta">
+    <div class="live-chip"><div class="dot"></div><span id="clock">--:--:-- ET</span></div>
+    <div class="dark-toggle" onclick="toggleDark()" title="Toggle dark mode">
+      <span class="dark-toggle-label" id="dark-label">LIGHT</span>
+      <div class="dark-toggle-track"><div class="dark-toggle-thumb"></div></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:0.6rem;letter-spacing:0.12em;color:var(--soft);text-transform:uppercase;white-space:nowrap">↻ AUTO-REFRESH</div>
+      <select id="refresh-select" onchange="setRefreshInterval(this.value)"
+        style="font-family:'IBM Plex Mono',monospace;font-size:0.65rem;background:var(--ink);color:var(--paper);border:1px solid rgba(255,255,255,0.2);padding:4px 8px;letter-spacing:0.08em;cursor:pointer;outline:none;">
+        <option value="0" selected>OFF</option>
+        <option value="60">60s</option>
+        <option value="120">2 min</option>
+        <option value="300">5 min</option>
+        <option value="600">10 min</option>
+      </select>
+      <span id="refresh-chip" style="font-family:'IBM Plex Mono',monospace;font-size:0.6rem;letter-spacing:0.12em;color:#4ade80;text-transform:uppercase;min-width:70px;white-space:nowrap"></span>
+    </div>
+  </div>
+</header>
+
+<!-- API INPUT -->
+<div class="api-bar">
+  <label>The-Odds-API Key</label>
+  <input type="password" id="apiKey" placeholder="Enter your free key from the-odds-api.com …" autocomplete="off"
+    onkeydown="if(event.key==='Enter') fetchLiveData()" />
+  <button class="btn btn-primary" onclick="fetchLiveData()">⬇ Fetch Lines</button>
+  <button class="btn" id="refresh-now-btn" onclick="refreshNow()" title="Manually refresh data now"
+    style="background:var(--cream);color:var(--ink);border:1.5px solid var(--line);opacity:0.5;cursor:not-allowed;"
+    disabled>↻ Refresh Now</button>
+  <button class="btn btn-demo" onclick="loadDemo()">Use Demo Data</button>
+  <div class="api-note">Free tier: 500 req/mo · basketball_ncaab · spreads + h2h + totals<br>No key? Click "Use Demo Data" for sample layout.</div>
+</div>
+
+<!-- POOL LINES BAR -->
+<div id="pool-bar" style="border-bottom:1px solid var(--line);background:var(--cream);">
+
+  <!-- collapsed header row -->
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 16px;gap:12px;cursor:pointer;" onclick="togglePoolBar()">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.62rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--soft);">⚡ POOL LINES</span>
+      <span id="pool-status-badge" style="font-size:0.58rem;color:var(--soft);font-family:'IBM Plex Mono',monospace;">not loaded — click to expand</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button onclick="clearPoolLines();event.stopPropagation();" id="pool-clear-btn"
+        style="display:none;padding:4px 10px;background:transparent;border:1px solid var(--line);color:var(--soft);font-size:0.58rem;font-family:'Syne',sans-serif;letter-spacing:0.08em;cursor:pointer;">
+        ✕ Clear
+      </button>
+      <span id="pool-bar-arrow" style="font-size:0.7rem;color:var(--soft);">▼</span>
+    </div>
+  </div>
+
+  <!-- expanded body -->
+  <div id="pool-bar-body" style="display:none;padding:12px 16px 14px;border-top:1px solid var(--line);">
+
+    <!-- last updated timestamp -->
+    <div id="pool-last-updated" style="font-size:0.58rem;font-family:'IBM Plex Mono',monospace;color:var(--soft);margin-bottom:10px;display:none;">
+      Lines loaded: <span id="pool-loaded-time" style="color:var(--ink);"></span>
+    </div>
+
+    <!-- instructions -->
+    <div style="font-size:0.62rem;color:var(--ink);line-height:2;margin-bottom:10px;">
+      <b>How to get your pool lines in 3 steps:</b><br>
+      <span style="color:var(--soft);">
+        <b style="color:var(--green);">1.</b> Go to your
+        <a href="https://contests.covers.com/officepools/picks/bets/a680d7a0-8943-439e-bd8d-b37300ba6ac2"
+           target="_blank" style="color:var(--green);">Covers pool pick page ↗</a>
+        and wait for it to fully load<br>
+        <b style="color:var(--green);">2.</b> Press <kbd style="background:var(--ink);color:var(--paper);padding:1px 6px;font-size:0.6rem;border-radius:2px;">F12</kbd> to open DevTools → click <b>Console</b> → paste this and press Enter:<br>
+        <button onclick="navigator.clipboard.writeText('copy(document.documentElement.outerHTML)').then(()=>{this.textContent='✓ Copied!';setTimeout(()=>this.textContent='copy(document.documentElement.outerHTML)',2000)})"
+          style="display:inline-flex;align-items:center;gap:6px;margin:4px 0 4px 14px;background:var(--ink);color:#4ade80;padding:6px 14px;font-size:0.65rem;font-family:'IBM Plex Mono',monospace;letter-spacing:0.02em;cursor:pointer;border:1px solid #4ade8044;border-radius:3px;transition:background 0.15s;"
+          onmouseover="this.style.background='#1a2a1a'" onmouseout="this.style.background='var(--ink)'"
+          title="Click to copy to clipboard">copy(document.documentElement.outerHTML)</button><br>
+        <b style="color:var(--green);">3.</b> Click <b>⬇ Load from Clipboard</b> below — or paste manually into the box and hit <b>Load</b>
+      </span>
+    </div>
+
+    <!-- quick clipboard button + manual paste -->
+    <div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;">
+      <button onclick="loadFromClipboard()"
+        style="padding:8px 18px;background:var(--green);color:#000;font-family:'Syne',sans-serif;font-weight:700;font-size:0.68rem;letter-spacing:0.12em;text-transform:uppercase;border:none;cursor:pointer;white-space:nowrap;flex-shrink:0;">
+        ⬇ Load from Clipboard
+      </button>
+      <textarea id="pool-paste-input" rows="2"
+        placeholder="…or paste manually here and hit Load"
+        style="flex:1;min-width:160px;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;background:var(--paper);border:1.5px solid var(--line);color:var(--ink);padding:8px 10px;resize:vertical;outline:none;min-height:44px;"></textarea>
+      <button onclick="loadPoolPaste()"
+        style="padding:8px 16px;background:var(--ink);color:var(--paper);font-family:'Syne',sans-serif;font-weight:700;font-size:0.68rem;letter-spacing:0.12em;text-transform:uppercase;border:none;cursor:pointer;white-space:nowrap;flex-shrink:0;">
+        Load
+      </button>
+    </div>
+
+    <!-- status / debug output -->
+    <div id="pool-paste-status" style="font-size:0.6rem;margin-top:8px;min-height:16px;font-family:'IBM Plex Mono',monospace;line-height:1.6;"></div>
+  </div>
+</div>
+
+<!-- FILTER + CONTROLS -->
+<!-- CONFERENCE FILTER -->
+<div class="conf-filter-bar" id="conf-filter-bar">
+  <button class="conf-btn active" data-conf="ALL" onclick="setConf('ALL',this)">ALL</button>
+  <button class="conf-btn" data-conf="B10"  onclick="setConf('B10',this)">Big Ten</button>
+  <button class="conf-btn" data-conf="BE"   onclick="setConf('BE',this)">Big East</button>
+  <button class="conf-btn" data-conf="SEC"  onclick="setConf('SEC',this)">SEC</button>
+  <button class="conf-btn" data-conf="ACC"  onclick="setConf('ACC',this)">ACC</button>
+  <button class="conf-btn" data-conf="B12"  onclick="setConf('B12',this)">Big 12</button>
+  <button class="conf-btn" data-conf="AAC"  onclick="setConf('AAC',this)">AAC</button>
+  <button class="conf-btn" data-conf="A10"  onclick="setConf('A10',this)">A-10</button>
+  <button class="conf-btn" data-conf="MAAC" onclick="setConf('MAAC',this)">MAAC</button>
+  <button class="conf-btn" data-conf="OTHER" onclick="setConf('OTHER',this)">Other</button>
+</div>
+
+<div class="controls-row">
+  <div class="filter-bar">
+    <button class="filter-btn" data-sort="variance" onclick="setSort('variance',this)">↓ Most Variance</button>
+    <button class="filter-btn active" data-sort="time" onclick="setSort('time',this)">Game Time</button>
+    <button class="filter-btn" data-sort="covers" onclick="setSort('covers',this)">Covers Line</button>
+    <button class="filter-btn" data-sort="alphabetical" onclick="setSort('alpha',this)">A–Z</button>
+  </div>
+  <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+    <div class="threshold-wrap">
+      Highlight threshold:
+      <input type="range" id="thresh" min="0.5" max="5" step="0.5" value="1.5" oninput="updateThreshold(this.value)">
+      <span id="thresh-val">1.5</span> pts
+    </div>
+    <div class="threshold-wrap">
+      View:
+      <select id="view-mode" onchange="setViewMode(this.value)"
+        style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;background:var(--paper);color:var(--ink);border:1px solid var(--line);padding:4px 8px;letter-spacing:0.06em;cursor:pointer;outline:none;accent-color:var(--accent);">
+        <option value="spread">Spread vs Covers</option>
+        <option value="juice">Juice at Covers Line</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<!-- STATUS -->
+<div class="status-bar">
+  <span class="status-count">Showing <strong id="game-count">0</strong> games · <strong id="flag-count">0</strong> flagged</span>
+  <span class="last-fetch" id="last-fetch-time">Not yet fetched</span>
+</div>
+
+<!-- TABLE AREA -->
+<div id="main-content">
+  <div class="state-panel">
+    <h3>Enter Your API Key or Use Demo Data</h3>
+    <p>Fetch live NCAAM lines from The Odds API and compare against Covers.com consensus alongside sharp market prices from Pinnacle, Novig, Prophet-X, FanDuel, and Circa. Biggest line gaps are auto-highlighted.</p>
+    <p style="font-size:0.62rem">Get a free key at <strong>the-odds-api.com</strong> — no credit card needed.</p>
+    <button class="btn btn-demo" onclick="loadDemo()">→ Load Demo Data</button>
+  </div>
+</div>
+<div id="mobile-cards-content" class="mobile-cards"></div>
+
+<!-- LEGEND -->
+<div class="legend">
+  <div class="legend-item"><div class="swatch sw-covers"></div><span>Covers (reference line)</span></div>
+  <div class="legend-item">
+    <div style="display:flex;gap:3px">
+      <div class="swatch" style="background:rgba(45,180,90,0.20);border:1px solid #2d7a45"></div>
+      <div class="swatch" style="background:rgba(40,165,75,0.45);border:1px solid #2d7a45"></div>
+      <div class="swatch" style="background:rgba(35,150,65,0.65);border:1px solid #2d7a45"></div>
+      <div class="swatch" style="background:rgba(30,135,55,0.83);border:1px solid #2d7a45"></div>
+    </div>
+    <span>Covers edge: +0.5 → +1.0 → +1.5 → +2.0+ pts vs best market</span>
+  </div>
+  <div class="legend-item"><div class="swatch" style="background:rgba(30,80,160,0.12);border:2px solid #1a50a0;"></div><span>Best book (most points for bettor)</span></div>
+  <div class="legend-item"><div class="swatch sw-flag"></div><span>Gap vs Covers exceeds threshold</span></div>
+  <div class="legend-item"><span style="color:#2d7a45;font-weight:700;font-size:0.8rem">▼</span>&nbsp;<span>Line moved down (better)</span>&nbsp;&nbsp;<span style="color:#c0392b;font-weight:700;font-size:0.8rem">▲</span>&nbsp;<span>Line moved up (worse) since last refresh</span></div>
+  <div class="legend-item" style="margin-left:auto">Spread mode: favorite's line shown · Juice mode: cost to bet the Covers line at each book</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+</div><!-- /wrap -->
+
+<script>
+// ═══════════════════════════════════════════════════
+//  CONSTANTS & STATE
+// ═══════════════════════════════════════════════════
+// Conference membership map — used for filter and live API fallback
+const CONF_MAP = {
+  // Big Ten (B10)
+  'illinois fighting illini':'B10','indiana hoosiers':'B10','iowa hawkeyes':'B10',
+  'maryland terrapins':'B10','michigan state spartans':'B10','michigan wolverines':'B10',
+  'minnesota golden gophers':'B10','nebraska cornhuskers':'B10','northwestern wildcats':'B10',
+  'ohio state buckeyes':'B10','oregon ducks':'B10','penn state nittany lions':'B10',
+  'purdue boilermakers':'B10','rutgers scarlet knights':'B10','ucla bruins':'B10',
+  'usc trojans':'B10','washington huskies':'B10','wisconsin badgers':'B10',
+  // Big East (BE)
+  'butler bulldogs':'BE','creighton bluejays':'BE','depaul blue demons':'BE',
+  'georgetown hoyas':'BE','marquette golden eagles':'BE','providence friars':'BE',
+  'seton hall pirates':'BE',"st. john's red storm":'BE','uconn huskies':'BE',
+  'villanova wildcats':'BE','xavier musketeers':'BE',
+  // SEC
+  'alabama crimson tide':'SEC','arkansas razorbacks':'SEC','auburn tigers':'SEC',
+  'florida gators':'SEC','georgia bulldogs':'SEC','kentucky wildcats':'SEC',
+  'lsu tigers':'SEC','mississippi state bulldogs':'SEC','missouri tigers':'SEC',
+  'ole miss rebels':'SEC','oklahoma sooners':'SEC','south carolina gamecocks':'SEC',
+  'tennessee volunteers':'SEC','texas a&m aggies':'SEC','texas longhorns':'SEC',
+  'vanderbilt commodores':'SEC',
+  // ACC
+  'boston college eagles':'ACC','california golden bears':'ACC','clemson tigers':'ACC',
+  'duke blue devils':'ACC','florida state seminoles':'ACC','georgia tech yellow jackets':'ACC',
+  'louisville cardinals':'ACC','miami hurricanes':'ACC','nc state wolfpack':'ACC',
+  'north carolina tar heels':'ACC','notre dame fighting irish':'ACC','pittsburgh panthers':'ACC',
+  'smu mustangs':'ACC','stanford cardinal':'ACC','syracuse orange':'ACC',
+  'virginia cavaliers':'ACC','virginia tech hokies':'ACC','wake forest demon deacons':'ACC',
+  // Big 12 (B12)
+  'arizona state sun devils':'B12','arizona wildcats':'B12','baylor bears':'B12',
+  'byu cougars':'B12','cincinnati bearcats':'B12','colorado buffaloes':'B12',
+  'houston cougars':'B12','iowa state cyclones':'B12','kansas jayhawks':'B12',
+  'kansas state wildcats':'B12','oklahoma state cowboys':'B12','tcu horned frogs':'B12',
+  'texas tech red raiders':'B12','ucf knights':'B12','utah utes':'B12',
+  'west virginia mountaineers':'B12',
+  // AAC (American Athletic)
+  'charlotte 49ers':'AAC','east carolina pirates':'AAC','florida atlantic owls':'AAC',
+  'memphis tigers':'AAC','north texas mean green':'AAC','rice owls':'AAC',
+  'south florida bulls':'AAC','temple owls':'AAC','tulane green wave':'AAC',
+  'tulsa golden hurricane':'AAC','uab blazers':'AAC','utsa roadrunners':'AAC',
+  'wichita state shockers':'AAC',
+  // A-10 (Atlantic 10)
+  'davidson wildcats':'A10','dayton flyers':'A10','duquesne dukes':'A10',
+  'fordham rams':'A10','george mason patriots':'A10','george washington revolutionaries':'A10',
+  'la salle explorers':'A10','loyola chicago ramblers':'A10','rhode island rams':'A10',
+  'richmond spiders':'A10',"saint joseph's hawks":'A10','saint louis billikens':'A10',
+  'st. bonaventure bonnies':'A10','vcu rams':'A10',
+  // MAAC
+  'canisius golden griffins':'MAAC','fairfield stags':'MAAC','iona gaels':'MAAC',
+  'manhattan jaspers':'MAAC','marist red foxes':'MAAC',"mount st. mary's mountaineers":'MAAC',
+  'niagara purple eagles':'MAAC','quinnipiac bobcats':'MAAC','rider broncs':'MAAC',
+  "saint peter's peacocks":'MAAC','siena saints':'MAAC',
+  // Big Sky
+  'eastern washington eagles':'OTHER','idaho state bengals':'OTHER','idaho vandals':'OTHER',
+  'montana grizzlies':'OTHER','montana state bobcats':'OTHER',
+  'northern arizona lumberjacks':'OTHER','northern colorado bears':'OTHER',
+  'portland state vikings':'OTHER','sacramento state hornets':'OTHER',
+  'weber state wildcats':'OTHER',
+  // America East
+  'binghamton bearcats':'OTHER','bryant bulldogs':'OTHER','maine black bears':'OTHER',
+  'njit highlanders':'OTHER','new hampshire wildcats':'OTHER','ualbany great danes':'OTHER',
+  'umbc retrievers':'OTHER','umass lowell river hawks':'OTHER','vermont catamounts':'OTHER',
+  // ASUN
+  'austin peay governors':'OTHER','bellarmine knights':'OTHER','central arkansas bears':'OTHER',
+  'eastern kentucky colonels':'OTHER','florida gulf coast eagles':'OTHER',
+  'jacksonville dolphins':'OTHER','lipscomb bisons':'OTHER','north alabama lions':'OTHER',
+  'north florida ospreys':'OTHER','queens university royals':'OTHER','stetson hatters':'OTHER',
+  'west georgia wolves':'OTHER',
+  // Big South
+  'charleston southern buccaneers':'OTHER','gardner-webb runnin\' bulldogs':'OTHER',
+  'high point panthers':'OTHER','longwood lancers':'OTHER','presbyterian blue hose':'OTHER',
+  'radford highlanders':'OTHER','south carolina upstate spartans':'OTHER',
+  'unc asheville bulldogs':'OTHER','winthrop eagles':'OTHER',
+};
+
+function getConf(teamName) {
+  const key = (teamName || '').toLowerCase().trim();
+  if (CONF_MAP[key]) return CONF_MAP[key];
+  // Fuzzy: check if any map key starts with the team name or vice versa
+  for (const [k, v] of Object.entries(CONF_MAP)) {
+    if (k.startsWith(key) || key.startsWith(k)) return v;
+  }
+  return 'OTHER';
+}
+
+const BOOKS_ORDER = [
+  { key: 'covers',    label: 'COVERS',     note: 'consensus', ref: true },
+  { key: 'draftkings',label: 'DRAFTKINGS', note: 'retail' },
+  { key: 'fanduel',   label: 'FANDUEL',    note: 'retail' },
+  { key: 'caesars',   label: 'CAESARS',    note: 'retail' },
+  { key: 'pinnacle',  label: 'PINNACLE',   note: 'sharp'  },
+  { key: 'circa',     label: 'CIRCA',      note: 'sharp'  },
+  { key: 'novig',     label: 'NOVIG',      note: 'sharp'  },
+  { key: 'prophetx',  label: 'PROPHET-X',  note: 'sharp'  },
+  { key: 'bookmaker', label: 'BOOKMAKER',  note: 'sharp'  },
+  { key: 'betonline', label: 'BETONLINE',  note: 'sharp'  },
+];
+
+// API key mappings (the-odds-api keys)
+const API_KEY_MAP = {
+  fanduel:    'fanduel',
+  draftkings: 'draftkings',
+  pinnacle:   'pinnacle',
+  fanduel:    'fanduel',
+};
+
+let allGames = [];
+let sortMode = 'time';
+let confFilter = new Set(['ALL']); // active conference filters (multi-select)
+let threshold = 1.5;
+let prevLines = {}; // snapshot of previous spreads keyed by gameId+bookKey
+let viewMode = 'spread'; // 'spread' or 'juice'
+let lineHistory = {}; // gameId|bookKey → [{time, s}]
+
+// ═══════════════════════════════════════════════════
+//  DEMO DATA (realistic March 2026 NCAAM slate)
+// ═══════════════════════════════════════════════════
+function buildDemo() {
+  // Today's real NCAAM slate — Sunday March 1, 2026
+  // Covers line = consensus from Covers.com · Sharp books sourced from market data
+  const raw = [
+    // Big Ten: Purdue @ Ohio State — 1:30pm ET (tip confirmed via Covers, OSU +6.5 per Covers article)
+    { away:'Purdue Boilermakers', home:'Ohio State Buckeyes',      time:'2026-03-03T18:30:00Z',
+      books:{ covers:{s:6.5,sj:-110,t:136.5,tj:-110,ml:+220}, pinnacle:{s:7,sj:-108,t:136.5,tj:-107,ml:+235}, novig:{s:7,sj:-104,t:137,tj:-104,ml:+240}, prophetx:{s:7,sj:-106,t:136.5,tj:-105,ml:+238}, fanduel:{s:7,sj:-115,t:136.5,tj:-115,ml:+225}, circa:{s:7.5,sj:-108,t:137,tj:-109,ml:+245}, draftkings:{s:7,sj:-110,t:136.5,tj:-110,ml:+230}, caesars:{s:7,sj:-110,t:136.5,tj:-110,ml:+228}, bookmaker:{s:7,sj:-105,t:137,tj:-105,ml:+242}, betonline:{s:7,sj:-110,t:136.5,tj:-110,ml:+232} } },
+    // Big Ten: Michigan State @ Indiana — 3:45pm ET (MSU -2.5 per Covers article)
+    { away:'Michigan State Spartans', home:'Indiana Hoosiers',     time:'2026-03-03T20:45:00Z',
+      books:{ covers:{s:-2.5,sj:-110,t:142.5,tj:-110,ml:-138}, pinnacle:{s:-3,sj:-107,t:142.5,tj:-107,ml:-148}, novig:{s:-3,sj:-104,t:143,tj:-104,ml:-150}, prophetx:{s:-3,sj:-106,t:142.5,tj:-105,ml:-145}, fanduel:{s:-3,sj:-115,t:142.5,tj:-115,ml:-140}, circa:{s:-3,sj:-108,t:143,tj:-108,ml:-152}, draftkings:{s:-3,sj:-110,t:142.5,tj:-110,ml:-145}, caesars:{s:-3,sj:-110,t:142.5,tj:-110,ml:-142}, bookmaker:{s:-3,sj:-105,t:143,tj:-105,ml:-150}, betonline:{s:-3,sj:-110,t:142.5,tj:-110,ml:-145} } },
+    // Big Ten: Rutgers @ Maryland — 12:00pm ET
+    { away:'Rutgers Scarlet Knights', home:'Maryland Terrapins',   time:'2026-03-03T17:00:00Z',
+      books:{ covers:{s:-5,sj:-110,t:134,tj:-110,ml:-210}, pinnacle:{s:-5,sj:-107,t:134,tj:-107,ml:-215}, novig:{s:-5,sj:-104,t:134.5,tj:-104,ml:-220}, prophetx:{s:-5,sj:-106,t:134,tj:-105,ml:-215}, fanduel:{s:-5,sj:-115,t:134,tj:-115,ml:-205}, circa:{s:-5.5,sj:-108,t:134.5,tj:-108,ml:-225}, draftkings:{s:-5,sj:-110,t:134,tj:-110,ml:-210}, caesars:{s:-5,sj:-110,t:134,tj:-110,ml:-208}, bookmaker:{s:-5.5,sj:-105,t:134.5,tj:-105,ml:-222}, betonline:{s:-5,sj:-110,t:134,tj:-110,ml:-212} } },
+    // Big Ten: Iowa @ Wisconsin — 3:00pm ET
+    { away:'Iowa Hawkeyes', home:'Wisconsin Badgers',              time:'2026-03-03T20:00:00Z',
+      books:{ covers:{s:-3,sj:-110,t:130.5,tj:-110,ml:-152}, pinnacle:{s:-3.5,sj:-107,t:130.5,tj:-107,ml:-162}, novig:{s:-3.5,sj:-104,t:131,tj:-104,ml:-165}, prophetx:{s:-3.5,sj:-106,t:130.5,tj:-105,ml:-160}, fanduel:{s:-3.5,sj:-115,t:130.5,tj:-115,ml:-152}, circa:{s:-3.5,sj:-108,t:131,tj:-108,ml:-168}, draftkings:{s:-3.5,sj:-110,t:130.5,tj:-110,ml:-158}, caesars:{s:-3.5,sj:-110,t:130.5,tj:-110,ml:-155}, bookmaker:{s:-3.5,sj:-105,t:131,tj:-105,ml:-165}, betonline:{s:-3.5,sj:-110,t:130.5,tj:-110,ml:-160} } },
+    // Big East: DePaul @ Marquette — 4:00pm ET
+    { away:'DePaul Blue Demons', home:'Marquette Golden Eagles',   time:'2026-03-03T21:00:00Z',
+      books:{ covers:{s:-16,sj:-110,t:155.5,tj:-110,ml:-1800}, pinnacle:{s:-16.5,sj:-106,t:155.5,tj:-107,ml:-1950}, novig:{s:-16.5,sj:-104,t:156,tj:-104,ml:-2000}, prophetx:{s:-16.5,sj:-105,t:155.5,tj:-105,ml:-1900}, fanduel:{s:-16.5,sj:-115,t:155.5,tj:-115,ml:-1800}, circa:{s:-17,sj:-108,t:156,tj:-108,ml:-2100}, draftkings:{s:-16.5,sj:-110,t:155.5,tj:-110,ml:-1900}, caesars:{s:-16.5,sj:-110,t:155.5,tj:-110,ml:-1850}, bookmaker:{s:-16.5,sj:-105,t:156,tj:-105,ml:-2000}, betonline:{s:-17,sj:-110,t:156,tj:-110,ml:-1950} } },
+    // Big East: Creighton @ Xavier — 1:00pm ET
+    { away:'Creighton Bluejays', home:'Xavier Musketeers',         time:'2026-03-03T18:00:00Z',
+      books:{ covers:{s:-6.5,sj:-110,t:148,tj:-110,ml:-270}, pinnacle:{s:-7,sj:-107,t:148,tj:-107,ml:-285}, novig:{s:-7,sj:-104,t:148.5,tj:-104,ml:-290}, prophetx:{s:-7,sj:-106,t:148,tj:-105,ml:-285}, fanduel:{s:-7,sj:-115,t:148,tj:-115,ml:-270}, circa:{s:-7.5,sj:-108,t:148.5,tj:-108,ml:-300}, draftkings:{s:-7,sj:-110,t:148,tj:-110,ml:-280}, caesars:{s:-7,sj:-110,t:148,tj:-110,ml:-275}, bookmaker:{s:-7,sj:-105,t:148.5,tj:-105,ml:-292}, betonline:{s:-7,sj:-110,t:148,tj:-110,ml:-278} } },
+    // AAC: UCF @ Houston — 3:00pm ET
+    { away:'UCF Knights', home:'Houston Cougars',                  time:'2026-03-03T20:00:00Z',
+      books:{ covers:{s:-8.5,sj:-110,t:140,tj:-110,ml:-360}, pinnacle:{s:-9,sj:-107,t:140,tj:-107,ml:-380}, novig:{s:-9,sj:-104,t:140.5,tj:-104,ml:-390}, prophetx:{s:-9,sj:-106,t:140,tj:-105,ml:-380}, fanduel:{s:-9,sj:-115,t:140,tj:-115,ml:-360}, circa:{s:-9.5,sj:-108,t:140.5,tj:-108,ml:-400}, draftkings:{s:-9,sj:-110,t:140,tj:-110,ml:-375}, caesars:{s:-9,sj:-110,t:140,tj:-110,ml:-365}, bookmaker:{s:-9,sj:-105,t:140.5,tj:-105,ml:-385}, betonline:{s:-9.5,sj:-110,t:140.5,tj:-110,ml:-390} } },
+    // AAC: North Texas @ UAB — 12:00pm ET
+    { away:'North Texas Mean Green', home:'UAB Blazers',           time:'2026-03-03T17:00:00Z',
+      books:{ covers:{s:-5,sj:-110,t:143,tj:-110,ml:-205}, pinnacle:{s:-5.5,sj:-107,t:143,tj:-107,ml:-215}, novig:{s:-5.5,sj:-104,t:143.5,tj:-104,ml:-220}, prophetx:{s:-5.5,sj:-106,t:143,tj:-105,ml:-212}, fanduel:{s:-5.5,sj:-115,t:143,tj:-115,ml:-205}, circa:{s:-5.5,sj:-108,t:143.5,tj:-108,ml:-222}, draftkings:{s:-5.5,sj:-110,t:143,tj:-110,ml:-210}, caesars:{s:-5.5,sj:-110,t:143,tj:-110,ml:-208}, bookmaker:{s:-5.5,sj:-105,t:143.5,tj:-105,ml:-218}, betonline:{s:-5.5,sj:-110,t:143,tj:-110,ml:-212} } },
+    // Big East: Villanova @ St. John's — 7:30pm ET
+    // St. John's is home FAVORITE. Covers has St. John's -5.5 (stored as home team spread).
+    // Market only has St. John's -4. So Villanova is getting +5.5 on Covers vs +4 elsewhere.
+    // Edge: Villanova +5.5 on Covers → Covers column should show Villanova +5.5 in green.
+    // Covers has St. John's -5.5. Sharp books (Pinnacle, Novig, ProphetX) have caught up to -5.5
+    // with reduced juice. Retail books (FanDuel, DraftKings, Caesars) still sitting on -4.
+    // In juice mode: sharp books show their juice @ -5.5; retail books show "Not on -5.5 / offers -4"
+    { away:'Villanova Wildcats', home:"St. John's Red Storm",      time:'2026-03-03T00:30:00Z',
+      books:{
+        // Covers reference line
+        covers:   {s:-5.5, sj:-110, t:152, tj:-110, ml:-240, allLines:{'-5.5':-110,'-4':-145,'-3':-175}},
+        // Sharp books — main line already at -5.5, good juice
+        pinnacle: {s:-5.5, sj:-106, t:152, tj:-107, ml:-225, allLines:{'-5.5':-106,'-4':-148,'-3':-178}},
+        novig:    {s:-5.5, sj:-104, t:152.5,tj:-104, ml:-220, allLines:{'-5.5':-104,'-4':-146,'-3':-175}},
+        prophetx: {s:-5.5, sj:-105, t:152, tj:-105, ml:-222, allLines:{'-5.5':-105,'-4':-147,'-3':-176}},
+        circa:    {s:-5.5, sj:-108, t:152.5,tj:-108, ml:-228, allLines:{'-5.5':-108,'-4':-150,'-3':-180}},
+        bookmaker:{s:-5.5, sj:-105, t:152.5,tj:-105, ml:-222, allLines:{'-5.5':-105,'-4':-148,'-3':-177}},
+        // Retail books — main line at -4, but -5.5 available as alternate at worse juice
+        fanduel:  {s:-4,  sj:-115, t:152, tj:-115, ml:-205, allLines:{'-4':-115,'-4.5':-125,'-5':-135,'-5.5':-148,'-6':-162}},
+        draftkings:{s:-4, sj:-110, t:152, tj:-110, ml:-198, allLines:{'-4':-110,'-4.5':-120,'-5':-130,'-5.5':-145,'-6':-158}},
+        caesars:  {s:-4,  sj:-110, t:152, tj:-110, ml:-200, allLines:{'-4':-110,'-4.5':-122,'-5':-132,'-5.5':-146,'-6':-160}},
+        // BetOnline only goes up to -5 — does not offer -5.5 at all
+        betonline:{s:-4,  sj:-110, t:152, tj:-110, ml:-198, allLines:{'-4':-110,'-4.5':-120,'-5':-132}},
+      } },
+    // Big East: Georgetown @ Providence — 2:00pm ET
+    { away:'Georgetown Hoyas', home:'Providence Friars',           time:'2026-03-03T19:00:00Z',
+      books:{ covers:{s:-3,sj:-110,t:137.5,tj:-110,ml:-158}, pinnacle:{s:-3,sj:-107,t:137.5,tj:-107,ml:-162}, novig:{s:-3,sj:-104,t:138,tj:-104,ml:-165}, prophetx:{s:-3,sj:-106,t:137.5,tj:-105,ml:-160}, fanduel:{s:-3,sj:-115,t:137.5,tj:-115,ml:-155}, circa:{s:-3.5,sj:-108,t:138,tj:-108,ml:-170}, draftkings:{s:-3,sj:-110,t:137.5,tj:-110,ml:-160}, caesars:{s:-3,sj:-110,t:137.5,tj:-110,ml:-158}, bookmaker:{s:-3.5,sj:-105,t:138,tj:-105,ml:-168}, betonline:{s:-3,sj:-110,t:137.5,tj:-110,ml:-162} } },
+    // MAAC: Quinnipiac @ Canisius — 1:00pm ET
+    { away:'Quinnipiac Bobcats', home:'Canisius Golden Griffins',  time:'2026-03-03T18:00:00Z',
+      books:{ covers:{s:-4,sj:-110,t:138,tj:-110,ml:-185}, pinnacle:{s:-4,sj:-107,t:138,tj:-107,ml:-190}, novig:{s:-4.5,sj:-104,t:138.5,tj:-104,ml:-195}, prophetx:{s:-4,sj:-106,t:138,tj:-105,ml:-190}, fanduel:{s:-4,sj:-115,t:138,tj:-115,ml:-185}, circa:{s:-4.5,sj:-108,t:138.5,tj:-108,ml:-200}, draftkings:{s:-4,sj:-110,t:138,tj:-110,ml:-188}, caesars:{s:-4,sj:-110,t:138,tj:-110,ml:-185}, bookmaker:{s:-4.5,sj:-105,t:138.5,tj:-105,ml:-198}, betonline:{s:-4,sj:-110,t:138,tj:-110,ml:-188} } },
+    // A-10: La Salle @ Davidson — 12:00pm ET
+    { away:'La Salle Explorers', home:'Davidson Wildcats',         time:'2026-03-03T17:00:00Z',
+      books:{ covers:{s:-10,sj:-110,t:133,tj:-110,ml:-500}, pinnacle:{s:-10.5,sj:-106,t:133,tj:-107,ml:-520}, novig:{s:-10.5,sj:-104,t:133.5,tj:-104,ml:-535}, prophetx:{s:-10.5,sj:-105,t:133,tj:-105,ml:-515}, fanduel:{s:-10.5,sj:-115,t:133,tj:-115,ml:-500}, circa:{s:-11,sj:-108,t:133.5,tj:-108,ml:-545}, draftkings:{s:-10.5,sj:-110,t:133,tj:-110,ml:-520}, caesars:{s:-10.5,sj:-110,t:133,tj:-110,ml:-515}, bookmaker:{s:-11,sj:-105,t:133.5,tj:-105,ml:-540}, betonline:{s:-10.5,sj:-110,t:133,tj:-110,ml:-520} } },
+  ];
+  return raw.map(g => enrichGame(g));
+}
+
+function buildAllLines(primarySpread, primaryJuice, bookKey) {
+  // Generate alternate lines menu for a book given their primary spread.
+  // Covers ±8 steps (4pts each side) in 0.5pt increments so pool lines
+  // further from the book's primary spread are still found.
+  // Sharp books: ~8pts juice per 0.5pt step. Retail: ~13pts per step.
+  const isSharp = ['pinnacle','novig','prophetx','circa','bookmaker'].includes(bookKey);
+  const step = isSharp ? 8 : 13;
+  const lines = {};
+  const sign = primarySpread <= 0 ? -1 : 1;
+  for (let i = -8; i <= 8; i++) {
+    const pt = +(primarySpread + i * 0.5).toFixed(1);
+    const juiceAdj = -i * sign * step;
+    const j = Math.round((primaryJuice || -110) + juiceAdj);
+    lines[String(pt)] = Math.max(-180, Math.min(-100, j));
+  }
+  return lines;
+}
+
+// Robust allLines juice lookup — handles numeric and string keys, ±0.05 tolerance
+function juiceAtPoint(allLines, point) {
+  if (!allLines || point == null) return undefined;
+  const p = +point;
+  // Try all string/number forms of this point
+  const candidates = [p, String(p), p.toFixed(1), String(p.toFixed(1))];
+  for (const c of candidates) {
+    if (allLines[c] !== undefined) return allLines[c];
+  }
+  // Scan all keys with ±0.05 tolerance (floating point guard)
+  for (const k of Object.keys(allLines)) {
+    if (Math.abs(parseFloat(k) - p) < 0.05) return allLines[k];
+  }
+  return undefined;
+}
+
+function enrichGame(g) {
+  const spreads = Object.values(g.books).map(b => b.s).filter(v => v != null);
+  const totals   = Object.values(g.books).map(b => b.t).filter(v => v != null);
+  const maxSpreadVar = spreads.length > 1 ? Math.max(...spreads) - Math.min(...spreads) : 0;
+  const maxTotalVar  = totals.length > 1  ? Math.max(...totals)  - Math.min(...totals)  : 0;
+  const coversSpread = g.books.covers?.s ?? null;
+
+  // True edge vs covers: pool must beat the best market line AND signs must agree.
+  // Mirrors the edge logic in renderTable exactly.
+  let maxDeltaVsCovers = 0;
+  if (coversSpread !== null) {
+    const mktSpreads = BOOKS_ORDER
+      .filter(b => b.key !== 'covers' && g.books[b.key] && g.books[b.key].s != null)
+      .map(b => g.books[b.key].s);
+    if (mktSpreads.length) {
+      const bestMktHome = Math.max(...mktSpreads);
+      const bestMktAway = Math.min(...mktSpreads);
+      const sameHome = coversSpread === 0 || bestMktHome === 0 || Math.sign(coversSpread) === Math.sign(bestMktHome);
+      const sameAway = coversSpread === 0 || bestMktAway === 0 || Math.sign(coversSpread) === Math.sign(bestMktAway);
+      const edgeHome = sameHome ? coversSpread - bestMktHome : 0;
+      const edgeAway = sameAway ? bestMktAway - coversSpread : 0;
+      maxDeltaVsCovers = Math.max(edgeHome, edgeAway, 0);
+    }
+  }
+
+  const enrichedBooks = {};
+  Object.entries(g.books).forEach(([key, line]) => {
+    if (line.allLines) {
+      enrichedBooks[key] = line;
+    } else {
+      enrichedBooks[key] = {
+        ...line,
+        allLines: key === 'covers' ? null : buildAllLines(line.s, line.sj, key),
+      };
+    }
+  });
+
+  return { ...g, books: enrichedBooks, maxSpreadVar, maxTotalVar, maxDeltaVsCovers };
+}
+
+// ═══════════════════════════════════════════════════
+//  LIVE DATA FETCH
+// ═══════════════════════════════════════════════════
+async function fetchLiveData() {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  if (!apiKey) { showToast('Please enter your API key from the-odds-api.com'); return; }
+
+  const setStatus = (msg) => {
+    const el = document.getElementById('main-content');
+    if (el) el.innerHTML = `<div class="state-panel"><div class="spinner"></div><h3>${msg}</h3><p style="font-size:0.8rem;opacity:0.6">This may take up to 30 seconds depending on proxy speed</p></div>`;
+  };
+
+  const showError = (msg) => {
+    const el = document.getElementById('main-content');
+    if (el) el.innerHTML = `<div class="state-panel"><h3 style="color:var(--red)">⚠ Error</h3><p style="font-size:0.85rem;max-width:500px;line-height:1.6">${msg}</p><p style="font-size:0.75rem;opacity:0.6;margin-top:12px">Open browser DevTools (F12 → Console) for details.</p></div>`;
+  };
+
+  const hasPoolLines = Object.keys(poolLinesCache).length > 0;
+  const totalSteps = hasPoolLines ? 3 : 4;
+
+  setStatus(`Step 1/${totalSteps} — Fetching US odds (DraftKings, FanDuel…)`);
+  try {
+    let usData = [], euData = [], allEvents = [], coversResult_val = { lines: {}, games: {} };
+
+    try { usData = await fetchOddsRegion(apiKey, 'us,us2,us_ex'); } catch(e) {
+      throw new Error('Could not reach The Odds API: ' + e.message + '. If your key is correct, a CORS proxy may be temporarily down — try again in a moment.');
+    }
+
+    setStatus(`Step 2/${totalSteps} — Fetching EU odds (Pinnacle…)`);
+    try { euData = await fetchOddsRegion(apiKey, 'eu'); } catch(e) { /* non-fatal */ }
+
+    setStatus(`Step 3/${totalSteps} — Fetching full game slate…`);
+    try { allEvents = await fetchAllEvents(apiKey); } catch(e) { /* non-fatal */ }
+
+    if (hasPoolLines) {
+      const poolKeys = Object.keys(poolLinesCache);
+
+      // Fuzzy match: pool uses short/display names, API uses full mascot names.
+      // Strategy: find common prefix length >= 4 chars for both away and home.
+      const teamMatch = (a, b) => {
+        if (!a || !b) return false;
+        const minLen = Math.min(a.length, b.length);
+        let common = 0;
+        while (common < minLen && a[common] === b[common]) common++;
+        return common >= 4;
+      };
+      const fuzzyMatchesPool = (apiAway, apiHome) => {
+        const aa = normalizeTeamKey(apiAway), ah = normalizeTeamKey(apiHome);
+        return poolKeys.some(pk => {
+          const [pa, ph] = pk.split('@');
+          return teamMatch(aa, pa) && teamMatch(ah, ph);
+        });
+      };
+
+      // Also build a remapped poolLinesCache keyed by API nk() so parseApiResponse finds them
+      const remappedPool = {};
+      const merged = mergeRegions(usData, euData);
+      merged.forEach(g => {
+        const aa = normalizeTeamKey(g.away_team), ah = normalizeTeamKey(g.home_team);
+        const match = poolKeys.find(pk => {
+          const [pa, ph] = pk.split('@');
+          return teamMatch(aa, pa) && teamMatch(ah, ph);
+        });
+        if (match) remappedPool[aa + '@' + ah] = poolLinesCache[match];
+      });
+
+      const filteredMerged = merged.filter(g => fuzzyMatchesPool(g.away_team, g.home_team));
+
+      // Include pool games not matched in API odds
+      const oddsGameKeys = new Set(filteredMerged.map(g =>
+        normalizeTeamKey(g.away_team) + '@' + normalizeTeamKey(g.home_team)
+      ));
+      const poolOnlyGames = poolKeys
+        .filter(pk => {
+          const [pa, ph] = pk.split('@');
+          return ![...oddsGameKeys].some(ak => {
+            const [aa, ah] = ak.split('@');
+            return teamMatch(aa, pa) && teamMatch(ah, ph);
+          });
+        })
+        .map(pk => {
+          const [pa, ph] = pk.split('@');
+          remappedPool[pa + '@' + ph] = poolLinesCache[pk];
+          return { id: pk, away_team: pa, home_team: ph,
+            commence_time: new Date(Date.now() + 86400000).toISOString(), bookmakers: [] };
+        });
+
+      const allApiGames = [...filteredMerged, ...poolOnlyGames];
+      if (!allApiGames.length) {
+        showEmpty('No matching games found. Make sure you pasted today\'s pool lines.');
+        return;
+      }
+      snapshotPrevLines();
+      allGames = parseApiResponse(allApiGames, remappedPool);
+      recordHistory(); isLiveMode = true; enableRefreshNow(); renderTable();
+      document.getElementById('last-fetch-time').textContent =
+        'Live · Pool lines + API · ' +
+        new Date().toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit', second:'2-digit', hour12:true });
+
+    } else {
+      // No pool lines — fetch Covers as usual
+      setStatus('Step 4/4 — Fetching Covers consensus lines…');
+      try { coversResult_val = await fetchCoversLines(); } catch(e) { /* non-fatal */ }
+
+      const coversMap   = coversResult_val.lines || {};
+      const coversGames = coversResult_val.games || {};
+      const coversKeys  = new Set(Object.keys(coversGames));
+      const coversAvailable = coversKeys.size > 0;
+
+      const merged = mergeRegions(usData, euData);
+      const filteredMerged = coversAvailable
+        ? merged.filter(g => coversKeys.has(normalizeTeamKey(g.away_team) + '@' + normalizeTeamKey(g.home_team)))
+        : merged;
+
+      const oddsGameKeys = new Set(filteredMerged.map(g =>
+        normalizeTeamKey(g.away_team) + '@' + normalizeTeamKey(g.home_team)
+      ));
+      const noOddsEvents = allEvents
+        .filter(e => {
+          const k = normalizeTeamKey(e.away_team) + '@' + normalizeTeamKey(e.home_team);
+          return (!coversAvailable || coversKeys.has(k)) && !oddsGameKeys.has(k);
+        })
+        .map(e => ({ ...e, bookmakers: [] }));
+      const allEventKeys = new Set([
+        ...oddsGameKeys,
+        ...noOddsEvents.map(e => normalizeTeamKey(e.away_team) + '@' + normalizeTeamKey(e.home_team))
+      ]);
+      const coversOnlyGames = Object.entries(coversGames)
+        .filter(([key]) => !allEventKeys.has(key))
+        .map(([key, g]) => ({
+          id: key, away_team: g.away, home_team: g.home,
+          commence_time: g.time || new Date(Date.now() + 86400000).toISOString(),
+          bookmakers: [],
+        }));
+      const allApiGames = [...filteredMerged, ...noOddsEvents, ...coversOnlyGames];
+      if (!allApiGames.length) {
+        showEmpty('No NCAAM games found. Check your API key or try again shortly.');
+        return;
+      }
+      snapshotPrevLines();
+      allGames = parseApiResponse(allApiGames, coversMap);
+      recordHistory(); isLiveMode = true; enableRefreshNow(); renderTable();
+      const hasScraped = allGames.some(g => g.books.covers?.fromScraper);
+      document.getElementById('last-fetch-time').textContent =
+        (hasScraped ? 'Live · Covers + API' : 'Live · API · mkt-median ref line') +
+        ' · ' + new Date().toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit', second:'2-digit', hour12:true });
+    }
+    startAutoRefresh();
+  } catch(e) {
+    console.error('[CoversEdge] fetchLiveData error:', e);
+    showError(e.message || String(e));
+    showToast('Error: ' + (e.message || String(e)));
+  }
+}
+
+// ── DIRECT FETCH HELPER ─────────────────────────────────────────────────────
+// Use for Odds API calls — API key auth breaks when routed through proxies.
+// directFetch: tries a plain fetch first (works if served from a CORS-friendly env),
+// then falls back to the same proxy list so it always works from file:// or http://localhost.
+async function directFetch(url, asText = false) {
+  const shortUrl = url.replace(/apiKey=[^&]+/, 'apiKey=***');
+  // 1. Try direct — the Odds API supports CORS so this should work from localhost
+  try {
+    console.log('[CoversEdge] directFetch direct:', shortUrl);
+    const res = await Promise.race([
+      fetch(url, { cache: 'no-store' }),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000))
+    ]);
+    if (res.ok) {
+      console.log('[CoversEdge] directFetch direct OK', res.status);
+      if (asText) return res.text();
+      return res.json();
+    }
+    // Non-2xx but we got a real response (e.g. 401 bad key) — surface that error directly
+    const body = await res.json().catch(() => ({}));
+    console.warn('[CoversEdge] directFetch direct non-OK:', res.status, body);
+    throw new Error(body.message || ('HTTP ' + res.status));
+  } catch(e) {
+    console.warn('[CoversEdge] directFetch direct failed:', e.message);
+    // If it's a real API error (401, 422, message field) re-throw immediately
+    if (e.message && e.message !== 'timeout' && !e.message.toLowerCase().includes('fetch') && !e.message.includes('CORS') && !e.message.includes('NetworkError') && !e.message.includes('network')) {
+      throw e;
+    }
+    // Otherwise it's a CORS/network block — fall through to proxies
+  }
+
+  // 2. Proxy fallback
+  console.log('[CoversEdge] directFetch trying proxies…');
+  const enc = encodeURIComponent(url);
+  const proxies = [
+    { label: 'corsproxy.io',   get: () => fetch('https://corsproxy.io/?' + enc,                 { cache:'no-store' }), wrap: false },
+    { label: 'allorigins/raw', get: () => fetch('https://api.allorigins.win/raw?url=' + enc,    { cache:'no-store' }), wrap: 'allorigins_raw' },
+    { label: 'allorigins/get', get: () => fetch('https://api.allorigins.win/get?url=' + enc,    { cache:'no-store' }), wrap: 'allorigins_get' },
+    { label: 'codetabs',       get: () => fetch('https://api.codetabs.com/v1/proxy?quest=' + enc, { cache:'no-store' }), wrap: false },
+    { label: 'thingproxy',     get: () => fetch('https://thingproxy.freeboard.io/fetch/' + url, { cache:'no-store' }), wrap: false },
+    { label: 'yacdn',          get: () => fetch('https://yacdn.org/proxy/' + url,               { cache:'no-store' }), wrap: false },
+  ];
+  let lastErr;
+  for (const p of proxies) {
+    try {
+      console.log('[CoversEdge] trying proxy:', p.label);
+      const res = await Promise.race([
+        p.get(),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 12000))
+      ]);
+      if (!res.ok) { console.warn('[CoversEdge] proxy', p.label, 'HTTP', res.status); lastErr = new Error('HTTP ' + res.status); continue; }
+      const raw = asText ? await res.text() : await res.json();
+      console.log('[CoversEdge] proxy success:', p.label);
+      if (!asText) {
+        if ((p.wrap === 'allorigins_raw' || p.wrap === 'allorigins_get') && raw && typeof raw.contents === 'string') {
+          const inner = raw.contents.trim();
+          return JSON.parse(inner);
+        }
+        if (raw && raw.message) throw new Error(raw.message);
+        return raw;
+      }
+      if (typeof raw === 'string') {
+        try { const j = JSON.parse(raw); if (typeof j.contents === 'string') return j.contents; } catch(e) {}
+        return raw;
+      }
+      if (raw && typeof raw.contents === 'string') return raw.contents;
+      return JSON.stringify(raw);
+    } catch(e) {
+      console.warn('[CoversEdge] proxy', p.label, 'failed:', e.message);
+      if (e.message && !e.message.includes('timeout') && !e.message.includes('fetch') && !e.message.includes('HTTP')) {
+        throw e;
+      }
+      lastErr = e;
+      continue;
+    }
+  }
+  throw lastErr || new Error('All proxies failed — check your internet connection');
+}
+
+// ── PROXY FETCH HELPER ──────────────────────────────────────────────────────
+// For Covers.com scraping only. Tries 7+ proxies in sequence.
+// Returns parsed JSON or throws with a meaningful error.
+async function proxyFetch(url, asText = false) {
+  const enc = encodeURIComponent(url);
+  const proxies = [
+    { get: () => fetch('https://api.allorigins.win/raw?url=' + enc, { cache:'no-store' }), wrap: 'allorigins_raw' },
+    { get: () => fetch('https://api.allorigins.win/get?url=' + enc, { cache:'no-store' }), wrap: 'allorigins_get' },
+    { get: () => fetch('https://api.codetabs.com/v1/proxy?quest=' + enc, { cache:'no-store' }), wrap: false },
+    { get: () => fetch('https://corsproxy.io/?' + enc,             { cache:'no-store' }), wrap: false },
+    { get: () => fetch('https://proxy.cors.sh/' + url,             { cache:'no-store', headers: { 'x-cors-api-key': 'temp_' + Math.random().toString(36).slice(2) } }), wrap: false },
+    { get: () => fetch('https://api.proxyscrape.com/v2/free-proxy-list/format=text&uptime=50&timeout=2000&ssl=yes&anonymity=elite&country=US', { cache:'no-store' }), wrap: false, skip: true },
+    { get: () => fetch('https://thingproxy.freeboard.io/fetch/' + url, { cache:'no-store' }), wrap: false },
+    { get: () => fetch('https://yacdn.org/proxy/' + url,           { cache:'no-store' }), wrap: false },
+    { get: () => fetch('https://cors-anywhere.herokuapp.com/' + url, { cache:'no-store', headers: { 'Origin': 'null' } }), wrap: false },
+  ].filter(p => !p.skip);
+  let lastErr;
+  for (const p of proxies) {
+    try {
+      const res = await Promise.race([
+        p.get(),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 12000))
+      ]);
+      if (!res.ok) { lastErr = new Error('HTTP ' + res.status); continue; }
+      if (asText) {
+        const raw = await res.text();
+        // allorigins /get wraps in JSON {contents:"..."}
+        try { const j = JSON.parse(raw); if (typeof j.contents === 'string') return j.contents; } catch(e) {}
+        return raw;
+      }
+      const raw = await res.json();
+      // Unwrap allorigins envelopes
+      if ((p.wrap === 'allorigins_raw' || p.wrap === 'allorigins_get') && raw && typeof raw.contents === 'string') {
+        const inner = raw.contents.trim();
+        if (asText) return inner;
+        return JSON.parse(inner);
+      }
+      if (asText) return JSON.stringify(raw);
+      return raw;
+    } catch(e) {
+      lastErr = e;
+      continue;
+    }
+  }
+  throw lastErr || new Error('All proxies failed for ' + url);
+}
+
+async function fetchAllEvents(apiKey) {
+  const bust = '&_cb=' + Date.now();
+  const from = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
+  const to   = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().replace(/\.\d{3}Z$/, 'Z');
+  const url = 'https://api.the-odds-api.com/v4/sports/basketball_ncaab/events?' +
+    'commenceTimeFrom=' + encodeURIComponent(from) +
+    '&commenceTimeTo='  + encodeURIComponent(to) +
+    '&apiKey=' + encodeURIComponent(apiKey) + bust;
+  try {
+    const data = await directFetch(url);
+    if (Array.isArray(data)) return data.filter(g => g.sport_key === 'basketball_ncaab').map(e => ({ ...e, bookmakers: [] }));
+  } catch(e) { /* non-fatal */ }
+  return [];
+}
+
+async function fetchOddsRegion(apiKey, regions) {
+  const bust = '&_cb=' + Date.now();
+  const from = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
+  const to   = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().replace(/\.\d{3}Z$/, 'Z');
+  const url = 'https://api.the-odds-api.com/v4/sports/basketball_ncaab/odds?' +
+    'regions=' + regions + '&markets=spreads,h2h,totals&oddsFormat=american' +
+    '&commenceTimeFrom=' + encodeURIComponent(from) +
+    '&commenceTimeTo='   + encodeURIComponent(to) +
+    '&apiKey=' + encodeURIComponent(apiKey) + bust;
+  const data = await directFetch(url);
+  if (data && data.message) throw new Error(data.message);
+  if (Array.isArray(data)) return data.filter(g => g.sport_key === 'basketball_ncaab' || !g.sport_key);
+  throw new Error('Unexpected response from odds API');
+}
+
+async function fetchCoversLines() {
+  const combinedLines = {};
+  const combinedGames = {};
+  const dates = [];
+  for (let i = 0; i <= 3; i++) {
+    const d = new Date(Date.now() + i * 86400000);
+    dates.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);
+  }
+
+  const fetchDate = async (date) => {
+    // Try JSON API first — cleaner, no HTML parsing needed
+    const jsonUrls = [
+      `https://www.covers.com/api/sports/ncaab/matchups?selectedDate=${date}`,
+      `https://www.covers.com/sports/ncaab/matchups/json?date=${date}`,
+    ];
+    for (const apiUrl of jsonUrls) {
+      try {
+        const data = await proxyFetch(apiUrl);
+        if (data && (Array.isArray(data) || data.games || data.matchups)) {
+          const raw = Array.isArray(data) ? data : (data.games || data.matchups || []);
+          if (raw.length > 0) {
+            const result = { lines: {}, games: {} };
+            raw.forEach(g => {
+              const away = g.awayTeam || g.away_team || g.away || '';
+              const home = g.homeTeam || g.home_team || g.home || '';
+              if (!away || !home) return;
+              const key = normalizeTeamKey(away) + '@' + normalizeTeamKey(home);
+              const time = g.gameTime || g.startTime || date + 'T23:59:00Z';
+              result.games[key] = { away, home, time };
+              const spread = g.consensus?.spread ?? g.homeSpread ?? g.spread ?? g.line;
+              if (spread !== undefined && spread !== null && spread !== '') {
+                const s = Math.round(parseFloat(spread) * 2) / 2;
+                if (!isNaN(s) && Math.abs(s) >= 0.5 && Math.abs(s) < 60) result.lines[key] = { s, sRaw: parseFloat(spread), sj: -110 };
+              }
+            });
+            if (Object.keys(result.games).length > 0) return result;
+          }
+        }
+      } catch(e) { /* fall through to HTML */ }
+    }
+
+    // Fall back to HTML page scraping
+    const htmlUrl = `https://www.covers.com/sports/ncaab/matchups?selectedDate=${date}`;
+    try {
+      const html = await proxyFetch(htmlUrl, true);
+      if (html && html.length > 5000) return parseCoversMatchupsHtml(html, date);
+    } catch(e) { /* non-fatal */ }
+
+    return { lines: {}, games: {} };
+  };
+
+  const results = await Promise.all(dates.map(fetchDate));
+  results.forEach(r => { Object.assign(combinedLines, r.lines); Object.assign(combinedGames, r.games); });
+  return { lines: combinedLines, games: combinedGames };
+}
+
+function parseCoversMatchupsHtml(html, dateStr) {
+  const lines = {};
+  const games = {};
+
+  try {
+    // ── Strategy 1: __INITIAL_STATE__ JSON blob (most reliable) ──────────────
+    const stateMatch = html.match(/window\.__INITIAL_STATE__\s*=\s*(\{[\s\S]+?\});\s*(?:<\/script>|window\.)/);
+    if (stateMatch) {
+      try {
+        const data = JSON.parse(stateMatch[1]);
+        const raw = data?.ncaab?.matchups?.games
+                 || data?.ncaab?.odds?.games
+                 || data?.sports?.ncaab?.games
+                 || data?.matchups?.games
+                 || data?.games || [];
+        if (raw.length > 0) {
+          raw.forEach(g => {
+            const away = g.awayTeam || g.away_team || g.away || '';
+            const home = g.homeTeam || g.home_team || g.home || '';
+            if (!away || !home) return;
+            const key = normalizeTeamKey(away) + '@' + normalizeTeamKey(home);
+            const spread = g.consensus?.spread ?? g.homeSpread ?? g.spread ?? g.line;
+            const time   = g.gameTime || g.startTime || g.commence_time || (dateStr + 'T23:59:00Z');
+            games[key] = { away, home, time };
+            if (spread !== undefined && spread !== null && spread !== '') {
+              let s = Math.round(parseFloat(spread) * 2) / 2;
+              if (!isNaN(s) && Math.abs(s) >= 0.5 && Math.abs(s) < 60) lines[key] = { s, sRaw: parseFloat(spread), sj: -110 };
+            }
+          });
+          if (Object.keys(games).length > 0) return { lines, games };
+        }
+      } catch(e) { /* fall through */ }
+    }
+
+    // ── Strategy 2: Next.js / Nuxt __NEXT_DATA__ or __NUXT__ JSON blob ────────
+    const nextMatch = html.match(/<script id="__NEXT_DATA__"[^>]*>(\{[\s\S]+?})<\/script>/);
+    if (nextMatch) {
+      try {
+        const data = JSON.parse(nextMatch[1]);
+        const props = data?.props?.pageProps || data?.props || data;
+        const raw = props?.matchups || props?.games || props?.data?.games || [];
+        raw.forEach(g => {
+          const away = g.awayTeam || g.away || '';
+          const home = g.homeTeam || g.home || '';
+          if (!away || !home) return;
+          const key = normalizeTeamKey(away) + '@' + normalizeTeamKey(home);
+          const spread = g.consensus?.spread ?? g.homeSpread ?? g.spread;
+          games[key] = { away, home, time: g.gameTime || dateStr + 'T23:59:00Z' };
+          if (spread !== undefined && spread !== null) {
+            let s = Math.round(parseFloat(spread) * 2) / 2;
+            if (!isNaN(s) && Math.abs(s) >= 0.5 && Math.abs(s) < 60) lines[key] = { s, sRaw: parseFloat(spread), sj: -110 };
+          }
+        });
+        if (Object.keys(games).length > 0) return { lines, games };
+      } catch(e) { /* fall through */ }
+    }
+
+    // ── Strategy 3: Scan for JSON arrays of game objects in script tags ───────
+    const scriptBlocks = html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi);
+    for (const block of scriptBlocks) {
+      const src = block[1];
+      // Look for arrays containing awayTeam/homeTeam keys
+      const arrMatch = src.match(/(\[[\s\S]{50,}\])/);
+      if (!arrMatch) continue;
+      try {
+        const arr = JSON.parse(arrMatch[1]);
+        if (!Array.isArray(arr) || arr.length === 0) continue;
+        if (!arr[0].awayTeam && !arr[0].away_team && !arr[0].away) continue;
+        arr.forEach(g => {
+          const away = g.awayTeam || g.away_team || g.away || '';
+          const home = g.homeTeam || g.home_team || g.home || '';
+          if (!away || !home) return;
+          const key = normalizeTeamKey(away) + '@' + normalizeTeamKey(home);
+          const spread = g.consensus?.spread ?? g.homeSpread ?? g.spread;
+          games[key] = { away, home, time: g.gameTime || dateStr + 'T23:59:00Z' };
+          if (spread !== undefined && spread !== null) {
+            let s = Math.round(parseFloat(spread) * 2) / 2;
+            if (!isNaN(s) && Math.abs(s) >= 0.5 && Math.abs(s) < 60) lines[key] = { s, sRaw: parseFloat(spread), sj: -110 };
+          }
+        });
+        if (Object.keys(games).length > 0) return { lines, games };
+      } catch(e) { continue; }
+    }
+
+    // ── Strategy 4: HTML scrape — team names + spreads from DOM structure ─────
+    // Covers HTML structure: team names in <a class="team-name"> or similar
+    // Spreads in elements with data-side or data-spread attributes
+    const teamMatches = [...html.matchAll(/class="[^"]*team[^"]*"[^>]*>([A-Z][^<]{2,40})<\/[a-z]/g)];
+    const spreadMatches = [...html.matchAll(/data-(?:spread|line|value)="([-+]?\d+\.?\d*)"/g)];
+    // Also try: spans/divs containing just a spread value like -5.5 or +12
+    const inlineSpreadMatches = [...html.matchAll(/>(\s*[-+]\d+\.5\s*|\s*[-+]\d+\.0\s*|\s*[-+]\d+\s*)</g)]
+      .map(m => parseFloat(m[1].trim()))
+      .filter(v => Math.abs(v) < 60 && v !== 0);
+
+    // If we found data-spread attributes paired with team names, use them
+    if (spreadMatches.length > 0 && teamMatches.length >= 2) {
+      // Pair up teams (every 2 = one game) with spreads (every 2 = one game)
+      for (let i = 0; i + 1 < teamMatches.length; i += 2) {
+        const away = teamMatches[i][1].trim();
+        const home = teamMatches[i + 1][1].trim();
+        const key = normalizeTeamKey(away) + '@' + normalizeTeamKey(home);
+        games[key] = { away, home, time: dateStr + 'T23:59:00Z' };
+        const spreadIdx = Math.floor(i / 2) * 2;
+        if (spreadMatches[spreadIdx]) {
+          const s = Math.round(parseFloat(spreadMatches[spreadIdx][1]) * 2) / 2;
+          if (!isNaN(s) && Math.abs(s) >= 0.5 && Math.abs(s) < 60) lines[key] = { s, sRaw: parseFloat(spread), sj: -110 };
+        }
+      }
+      if (Object.keys(games).length > 0) return { lines, games };
+    }
+
+  } catch(e) { console.warn('parseCoversMatchupsHtml error:', e); }
+
+  return { lines, games };
+}
+
+// Legacy parser kept as fallback — targets __INITIAL_STATE__ JSON blob
+function parseCoversHtml(html) {
+  const lines = {};
+  const games = {};
+  try {
+    const m = html.match(/window\.__INITIAL_STATE__\s*=\s*(\{[\s\S]+?\});\s*<\/script>/);
+    if (!m) return { lines, games };
+    const data = JSON.parse(m[1]);
+    const raw = data?.ncaab?.odds?.games
+             || data?.sports?.ncaab?.games
+             || data?.games || [];
+    raw.forEach(g => {
+      const away = g.awayTeam || g.away || '';
+      const home = g.homeTeam || g.home || '';
+      if (!away || !home) return;
+      const key = normalizeTeamKey(away) + '@' + normalizeTeamKey(home);
+      const spread = g.consensus?.spread ?? g.spread ?? g.homeSpread;
+      if (spread !== undefined && spread !== null) {
+        const _s = Math.round(parseFloat(spread) * 2) / 2; if (!isNaN(_s) && Math.abs(_s) >= 0.5 && Math.abs(_s) < 60) lines[key] = { s: _s, sRaw: parseFloat(spread), sj: -110 };
+      }
+      const time = g.gameTime || g.startTime || g.commence_time || null;
+      games[key] = { away, home, time };
+    });
+  } catch(e) {}
+  return { lines, games };
+}
+
+function normalizeTeamKey(name) {
+  // Alias map: Covers display name → canonical prefix that matches the Odds API name.
+  // Only needed when the two names share no common 4-char prefix.
+  const aliases = {
+    'ul lafayette': 'louisiana', 'louisiana lafayette': 'louisiana',
+    'ull': 'louisiana',
+    'lsu': 'louisianas',
+    'usc': 'southernca',
+    'ucf': 'centralflo',
+    'fiu': 'floridaint',
+    'fau': 'floridaatl',
+    'utep': 'texaselpa',
+    'utsa': 'texasatsa',
+    'uab': 'alabamabi',
+    'vcu': 'virginiacom',
+    'smu': 'southernme',
+    'tcu': 'texaschri',
+    'byu': 'brighamyo',
+    'unlv': 'nevadala',
+    'umbc': 'marylandba',
+    'umass': 'massachuse',
+    'unc': 'northcarol',
+    'ncsu': 'northcarol',
+    'ole miss': 'mississipp',
+    'miami (fl)': 'miamiflo',
+    'miami (oh)': 'miamiohio',
+    'pitt': 'pittsburgh',
+    'uconn': 'connecticu',
+    'st. john\'s': 'saintjohns',
+    'saint john\'s': 'saintjohns',
+  };
+  const lower = (name || '').toLowerCase().trim();
+  const aliased = aliases[lower];
+  if (aliased) return aliased.slice(0, 10);
+  return lower.replace(/[^a-z]/g,'').slice(0,10);
+}
+
+// ── POOL LINES ────────────────────────────────────────────────────────────────
+let poolLinesCache = {};
+
+function togglePoolBar() {
+  const body  = document.getElementById('pool-bar-body');
+  const arrow = document.getElementById('pool-bar-arrow');
+  const open  = body.style.display === 'none';
+  body.style.display = open ? 'block' : 'none';
+  arrow.textContent  = open ? '▲' : '▼';
+}
+
+function loadPoolPaste() {
+  const raw    = (document.getElementById('pool-paste-input').value || '').trim();
+  const status = document.getElementById('pool-paste-status');
+  if (!raw) { status.style.color = 'var(--soft)'; status.textContent = 'Nothing pasted yet.'; return; }
+  status.style.color = 'var(--soft)'; status.textContent = 'Parsing…';
+  const result = parsePoolSource(raw);
+  const count  = Object.keys(result.lines).length;
+  if (count === 0) {
+    status.style.color = 'var(--red)';
+    status.innerHTML = '✗ No pool lines found in pasted content.<br>'
+      + '<span style="opacity:0.7">Debug: '
+      + (result.debug.join(' · ') || 'no strategies matched')
+      + '</span>';
+    return;
+  }
+  status.style.color = 'var(--green)';
+  status.textContent = '✓ ' + count + ' games loaded — ' + result.debug.join(', ');
+  ingestPoolLines(result.lines, count + ' games');
+}
+
+async function loadFromClipboard() {
+  const status = document.getElementById('pool-paste-status');
+  status.style.color = 'var(--soft)'; status.textContent = 'Reading clipboard…';
+  try {
+    const text = await navigator.clipboard.readText();
+    if (!text || text.trim().length < 100) {
+      status.style.color = 'var(--red)';
+      status.textContent = '✗ Clipboard is empty or too short — run copy(document.documentElement.outerHTML) on the Covers page first.';
+      return;
+    }
+    status.textContent = 'Parsing…';
+    const result = parsePoolSource(text);
+    const count = Object.keys(result.lines).length;
+    if (count === 0) {
+      status.style.color = 'var(--red)';
+      status.innerHTML = '✗ No pool lines found in clipboard.<br>'
+        + '<span style="opacity:0.7">Debug: '
+        + (result.debug.join(' · ') || 'no strategies matched')
+        + '</span>';
+      return;
+    }
+    status.style.color = 'var(--green)';
+    status.textContent = '✓ ' + count + ' games loaded from clipboard — ' + result.debug.join(', ');
+    ingestPoolLines(result.lines, count + ' games');
+  } catch(e) {
+    status.style.color = 'var(--red)';
+    status.textContent = '✗ Clipboard access denied — use the manual paste box instead, or allow clipboard access in your browser settings.';
+  }
+}
+
+// Parse the Covers pool page VIEW SOURCE (raw HTML).
+// Tries 3 strategies: embedded JSON, table rows, spread pattern in text.
+function parsePoolSource(html) {
+  const lines = {};
+  const debug = [];
+  const nk = n => (n || '').toLowerCase().replace(/[^a-z]/g, '').slice(0, 10);
+  const validSpread = v => { const n = parseFloat(v); return !isNaN(n) && Math.abs(n) >= 0.5 && Math.abs(n) < 60; };
+  const stripTags = s => s.replace(/<[^>]+>/g, ' ').replace(/&amp;/g,'&').replace(/&nbsp;/g,' ').replace(/\s+/g,' ').trim();
+
+  // Strategy 1: Covers office pool structure.
+  // Look for the matchup td (class="cmg_contest_bets_matchup" or just contains 2 team name divs)
+  // and the adjacent line td (class contains "line") with spread spans.
+  // Use class-based selectors on the raw HTML rather than trying to parse full <tr> blocks.
+
+  // Find all matchup cells directly by class
+  const matchupPattern = /<td[^>]*class="[^"]*cmg_contest_bets_matchup[^"]*"[^>]*>([\s\S]*?)<\/td>/gi;
+  const matchupMatches = [...html.matchAll(matchupPattern)];
+
+  if (matchupMatches.length > 0) {
+    // For each matchup cell, find the nearest following line cell
+    for (const mm of matchupMatches) {
+      const divTexts = [...mm[1].matchAll(/<div[^>]*>([\s\S]*?)<\/div>/gi)]
+        .map(m => stripTags(m[1]))
+        .filter(t => t.length > 1 && !/^\d{1,2}:\d{2}/.test(t) && !/^(--|research|matchup|time|sides|totals)$/i.test(t));
+      if (divTexts.length < 2) continue;
+      const away = divTexts[0], home = divTexts[1];
+
+      // Find the line cell that comes right after this matchup cell in the HTML
+      const afterMatchup = html.slice(mm.index + mm[0].length);
+      const lineTdM = afterMatchup.match(/<td[^>]*class="[^"]*\bline\b[^"]*"[^>]*>([\s\S]*?)<\/td>/i);
+      if (!lineTdM) continue;
+
+      // Extract all spread values from <span> tags inside the line cell
+      const spans = [...lineTdM[1].matchAll(/<span[^>]*>([\s\S]*?)<\/span>/gi)]
+        .map(m => stripTags(m[1])).filter(v => validSpread(v));
+      if (!spans.length) continue;
+
+      // First span = away spread, second span = home spread
+      const homeRaw = parseFloat(spans.length >= 2 ? spans[1] : spans[0]);
+      const homeS = Math.round(homeRaw * 2) / 2;
+      if (!validSpread(homeS)) continue;
+
+      lines[nk(away) + '@' + nk(home)] = { s: homeS, sRaw: homeRaw, sj: -110 };
+    }
+    if (Object.keys(lines).length > 0) {
+      debug.push('Covers pool: ' + Object.keys(lines).length + ' games');
+      return { lines, debug };
+    }
+  }
+
+  // Strategy 1b: fallback — no class on matchup td, scan all <tr> rows
+  const rows = [...html.matchAll(/<tr(?:\s[^>]*)?>([\s\S]*?)<\/tr>/gi)].map(m => m[1]);
+  let found = 0;
+  for (const row of rows) {
+    if (/<th/i.test(row)) continue;
+
+    // Find matchup td: look for a td with exactly 2 non-trivial div children
+    let away = '', home = '';
+    const tdMatches = [...row.matchAll(/<td(?:\s[^>]*)?>([\s\S]*?)<\/td>/gi)];
+    for (const tdm of tdMatches) {
+      const divTexts = [...tdm[1].matchAll(/<div[^>]*>([\s\S]*?)<\/div>/gi)]
+        .map(m => stripTags(m[1]))
+        .filter(t => t.length > 1 && !/^\d{1,2}:\d{2}/.test(t) && !/^(--|research|matchup|time|sides|totals)$/i.test(t));
+      if (divTexts.length === 2) { away = divTexts[0]; home = divTexts[1]; break; }
+    }
+    if (!away || !home) continue;
+
+    // Find line td by class
+    const lineTdM = row.match(/<td[^>]*class="[^"]*\bline\b[^"]*"[^>]*>([\s\S]*?)<\/td>/i);
+    if (!lineTdM) continue;
+    const spans = [...lineTdM[1].matchAll(/<span[^>]*>([\s\S]*?)<\/span>/gi)]
+      .map(m => stripTags(m[1])).filter(v => validSpread(v));
+    if (!spans.length) continue;
+
+    const homeRaw = parseFloat(spans.length >= 2 ? spans[1] : spans[0]);
+    const homeS = Math.round(homeRaw * 2) / 2;
+    if (!validSpread(homeS)) continue;
+
+    lines[nk(away) + '@' + nk(home)] = { s: homeS, sRaw: homeRaw, sj: -110 };
+    found++;
+  }
+  if (found > 0) { debug.push('Covers pool (fallback): ' + found + ' games'); return { lines, debug }; }
+
+  // Strategy 2: embedded JSON (future-proofing)
+  for (const pat of [/window\.__INITIAL_STATE__\s*=\s*({[\s\S]+?});\s*<\/script>/, /<script[^>]+__NEXT_DATA__[^>]*>\s*({[\s\S]+?})\s*<\/script>/]) {
+    const m = html.match(pat);
+    if (!m) continue;
+    try {
+      const data = JSON.parse(m[1]);
+      const arrs = [data.games, data.matchups, data.bets,
+        data.props && data.props.pageProps && (data.props.pageProps.games || data.props.pageProps.bets)
+      ].filter(a => Array.isArray(a) && a.length > 0);
+      for (const arr of arrs) {
+        let jf = 0;
+        arr.forEach(g => {
+          const away = g.awayTeam || g.away_team || g.away || '';
+          const home = g.homeTeam || g.home_team || g.home || '';
+          if (!away || !home) return;
+          const sp = g.contestSpread != null ? g.contestSpread : g.poolSpread != null ? g.poolSpread : g.homeSpread != null ? g.homeSpread : g.spread != null ? g.spread : null;
+          if (sp == null) return;
+          const sRaw = parseFloat(sp), s = Math.round(sRaw * 2) / 2;
+          if (!validSpread(s)) return;
+          lines[nk(away) + '@' + nk(home)] = { s, sRaw, sj: -110 };
+          jf++;
+        });
+        if (jf > 0) { debug.push('JSON: ' + jf + ' games'); return { lines, debug }; }
+      }
+    } catch(e) {}
+  }
+
+  // Diagnostics
+  const isLogin = /sign.?in|log.?in|password/i.test(html.slice(0, 5000));
+  if (isLogin) debug.push('Looks like a login page — make sure you are logged in to Covers, then Ctrl+U');
+  else if (!/<tr/i.test(html)) debug.push('No table rows found — wrong page?');
+  else debug.push('Table found but no games parsed — unexpected page structure');
+  return { lines, debug };
+}
+
+function ingestPoolLines(lines, source) {
+  const count = Object.keys(lines).length;
+  if (!count) return;
+  poolLinesCache = lines;
+  localStorage.setItem('coversedge-pool-lines', JSON.stringify({ lines, ts: Date.now() }));
+  updatePoolBadge(count, source, Date.now());
+  if (allGames.length) {
+    const poolKeys = Object.keys(lines);
+    const teamMatch = (a, b) => {
+      if (!a || !b) return false;
+      const minLen = Math.min(a.length, b.length);
+      let c = 0; while (c < minLen && a[c] === b[c]) c++;
+      return c >= 4;
+    };
+    allGames.forEach(game => {
+      const aa = normalizeTeamKey(game.away), ah = normalizeTeamKey(game.home);
+      // Fuzzy match: API full names vs Covers short display names
+      const matchKey = poolKeys.find(pk => {
+        const [pa, ph] = pk.split('@');
+        return teamMatch(aa, pa) && teamMatch(ah, ph);
+      });
+      const pl = matchKey ? lines[matchKey] : null;
+      if (!pl) return;
+      game.books.covers = { s: pl.s, sRaw: pl.sRaw ?? pl.s, sj: -110, fromPool: true };
+      // Re-enrich to recalculate maxDeltaVsCovers with correct edge formula
+      const reenriched = enrichGame(game);
+      game.maxDeltaVsCovers = reenriched.maxDeltaVsCovers;
+      game.maxSpreadVar = reenriched.maxSpreadVar;
+    });
+    renderTable();
+    showToast('✓ ' + count + ' pool lines loaded');
+  }
+}
+
+function updatePoolBadge(count, source, ts) {
+  const badge    = document.getElementById('pool-status-badge');
+  const clearBtn = document.getElementById('pool-clear-btn');
+  const tsRow    = document.getElementById('pool-last-updated');
+  const tsSpan   = document.getElementById('pool-loaded-time');
+  const age = ts ? Math.round((Date.now() - ts) / 60000) : null;
+  const ageStr = age === null ? '' : age < 2 ? 'just now' : age < 60 ? age + 'm ago' : Math.round(age/60) + 'h ago';
+  if (badge) {
+    badge.textContent = '✓ ' + count + ' pool lines' + (ageStr ? ' · ' + ageStr : '');
+    badge.style.color = (age !== null && age > 240) ? 'var(--gold)' : 'var(--green)';
+  }
+  if (clearBtn) clearBtn.style.display = '';
+  if (tsRow && tsSpan && ts) {
+    const d = new Date(ts);
+    const timeStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
+    const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    tsSpan.textContent = timeStr + ' · ' + dateStr + (ageStr ? '  (' + ageStr + ')' : '');
+    tsRow.style.display = '';
+  }
+}
+
+function clearPoolLines() {
+  poolLinesCache = {};
+  localStorage.removeItem('coversedge-pool-lines');
+  const badge    = document.getElementById('pool-status-badge');
+  const clearBtn = document.getElementById('pool-clear-btn');
+  const inp      = document.getElementById('pool-paste-input');
+  const status   = document.getElementById('pool-paste-status');
+  if (badge)    { badge.textContent = 'not loaded — click to expand'; badge.style.color = 'var(--soft)'; }
+  if (clearBtn) clearBtn.style.display = 'none';
+  const tsRow = document.getElementById('pool-last-updated');
+  if (tsRow) tsRow.style.display = 'none';
+  if (inp)      inp.value = '';
+  if (status)   status.textContent = '';
+  if (allGames.length) {
+    allGames = allGames.map(g => {
+      if (!g.books.covers?.fromPool) return g;
+      return enrichGame({ ...g, books: { ...g.books, covers: { s: null, sRaw: null, sj: -110 } } });
+    });
+    renderTable();
+  }
+}
+
+// Restore persisted lines on page load
+(function initPool() {
+  try {
+    const saved = localStorage.getItem('coversedge-pool-lines');
+    if (!saved) return;
+    const parsed = JSON.parse(saved);
+    const raw = parsed.lines || parsed;
+    if (!raw || !Object.keys(raw).length) return;
+    poolLinesCache = raw;
+    updatePoolBadge(Object.keys(raw).length, null, parsed.ts || null);
+  } catch(e) {}
+})();
+
+
+function mergeRegions(usGames, euGames) {
+  const euMap = {};
+  euGames.forEach(g => { euMap[g.away_team + '|' + g.home_team] = g; });
+  return usGames.map(g => {
+    const eu = euMap[g.away_team + '|' + g.home_team];
+    if (!eu) return g;
+    return {
+      ...g,
+      bookmakers: [
+        ...(g.bookmakers || []),
+        ...(eu.bookmakers || []).filter(b => b.key === 'pinnacle'),
+      ]
+    };
+  });
+}
+
+function recordHistory() {
+  const now = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
+  allGames.forEach(g => {
+    const id = g.id || (g.away + '@' + g.home);
+    Object.entries(g.books).forEach(([bk, line]) => {
+      const key = id + '|' + bk;
+      if (!lineHistory[key]) lineHistory[key] = [];
+      const hist = lineHistory[key];
+      if (!hist.length || hist[hist.length-1].s !== line.s) {
+        hist.push({ time: now, s: line.s });
+        if (hist.length > 10) hist.shift();
+      }
+    });
+  });
+}
+
+
+function snapshotPrevLines() {
+  prevLines = {};
+  allGames.forEach(g => {
+    const id = g.id || (g.away + "@" + g.home);
+    Object.entries(g.books).forEach(([bk, line]) => {
+      prevLines[id + "|" + bk] = line.s;
+    });
+  });
+}
+
+// Real book key mappings — no more approximations
+const BOOK_KEY_MAP = {
+  'pinnacle':         'pinnacle',
+  'draftkings':       'draftkings',
+  'fanduel':          'fanduel',
+  'williamhill_us':   'caesars',
+  'lowvig':           'circa',
+  'novig':            'novig',
+  'prophetx':         'prophetx',
+  'bookmaker':        'bookmaker',
+  'betonlineag':      'betonline',
+  'caesars':          'caesars',
+  'betus':            'betonline',
+  'mybookieag':       'bookmaker',
+  'superbook':        'bookmaker',
+  'unibet_us':        null,         // excluded
+  'betmgm':           null,         // excluded
+  'betrivers':        null,         // excluded
+  'espnbet':          null,         // excluded
+};
+
+function parseApiResponse(data, coversLines = {}) {
+  // Hard filter: only process NCAAB games
+  data = data.filter(e => !e.sport_key || e.sport_key === 'basketball_ncaab');
+  return data.map(event => {
+    const books = {};
+    let sharpSpreads = []; // for Covers fallback consensus
+
+    event.bookmakers?.forEach(bk => {
+      const spreadMkt    = bk.markets?.find(m => m.key === 'spreads');
+      const altSpreadMkt = bk.markets?.find(m => m.key === 'spreads_alternate');
+      const totalMkt     = bk.markets?.find(m => m.key === 'totals');
+      const mlMkt        = bk.markets?.find(m => m.key === 'h2h');
+
+      const homeSpread = spreadMkt?.outcomes?.find(o => o.name === event.home_team);
+      const overTotal  = totalMkt?.outcomes?.find(o => o.name === 'Over');
+      const homeML     = mlMkt?.outcomes?.find(o => o.name === event.home_team);
+
+      const mapped = BOOK_KEY_MAP[bk.key];
+      if (mapped === undefined) return;
+      if (mapped === null) return;
+
+      // Build allLines keyed by HOME-team spread point → juice.
+      // The Odds API returns paired outcomes (one per team) for each spread.
+      // We collect BOTH home and away outcomes — away points are negated to home-team perspective.
+      // This ensures e.g. Oregon +19.5 (away) is stored as Illinois -19.5 (home key = -19.5).
+      const allLines = {};
+      const collectOutcomes = (mkt) => {
+        mkt?.outcomes?.forEach(o => {
+          if (o.point === undefined) return;
+          const pt = +(o.point).toFixed(1);
+          if (o.name === event.home_team) {
+            allLines[String(pt)] = o.price ?? -110;
+          } else if (o.name === event.away_team) {
+            // Away team point is the mirror — negate to get home-team perspective
+            allLines[String(-pt)] = o.price ?? -110;
+          }
+        });
+      };
+      collectOutcomes(spreadMkt);
+      collectOutcomes(altSpreadMkt);
+
+      // Only use API allLines when we actually got alternate spreads back.
+      // If only the primary spread market was collected, allLines has just 1-2 entries
+      // (home + away at same point) — not enough to look up a different pool line.
+      // In that case fall back to buildAllLines which covers ±8 steps from primary.
+      const hasRealAltLines = Object.keys(allLines).length > 2;
+
+      if (homeSpread) {
+        // If API returned alternate spreads, use them; otherwise build a simulated menu
+        const finalAllLines = hasRealAltLines
+          ? allLines
+          : buildAllLines(homeSpread.point, homeSpread.price ?? -110, mapped);
+
+        books[mapped] = {
+          s:       homeSpread.point,
+          sj:      homeSpread.price ?? -110,
+          t:       overTotal?.point ?? 0,
+          tj:      overTotal?.price ?? -110,
+          ml:      homeML?.price ?? 0,
+          allLines: finalAllLines,
+        };
+        if (['pinnacle','novig','prophetx'].includes(mapped)) {
+          sharpSpreads.push(homeSpread.point);
+        }
+      }
+    });
+
+    const avg = arr => arr.length ? +(arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1) : null;
+    const median = arr => {
+      if (!arr.length) return null;
+      const s = [...arr].sort((a,b)=>a-b);
+      const m = Math.floor(s.length/2);
+      return s.length % 2 ? s[m] : (s[m-1]+s[m])/2;
+    };
+    const coversKey = normalizeTeamKey(event.away_team) + '@' + normalizeTeamKey(event.home_team);
+    const coversLine = coversLines[coversKey];
+
+    // If no scraped Covers line, compute a market consensus from all books as fallback.
+    // Use median of all available spreads, rounded to nearest 0.5.
+    let fallbackLine = null;
+    if (!coversLine) {
+      const allSpreads = Object.entries(books)
+        .filter(([k]) => k !== 'covers')
+        .map(([,b]) => b.s)
+        .filter(v => v != null);
+      const med = median(allSpreads);
+      if (med !== null) {
+        const rounded = Math.round(med * 2) / 2;
+        fallbackLine = { s: rounded, sRaw: med, sj: -110, fromConsensus: true };
+      }
+    }
+
+    const activeLine = coversLine || fallbackLine;
+    // fromPool: true if the coversLine came from remappedPool (passed as coversLines when pool active)
+    const isFromPool = !!coversLine && !!coversLine.sj && coversLines[coversKey]?.fromPool !== false
+      && (Object.keys(poolLinesCache).length > 0);
+    books['covers'] = {
+      s:             activeLine ? activeLine.s    : null,
+      sRaw:          activeLine ? (activeLine.sRaw ?? activeLine.s) : null,
+      sj:            activeLine ? activeLine.sj   : -110,
+      t:             avg(Object.values(books).map(b=>b.t).filter(v => v != null)),
+      tj:            -110,
+      ml:            Math.round(avg(Object.values(books).map(b=>b.ml).filter(v => v != null)) || 0),
+      fromScraper:   !!coversLine && !isFromPool,
+      fromPool:      isFromPool,
+      fromConsensus: !coversLine && !!fallbackLine,
+    };
+
+    return enrichGame({
+      id: event.id,
+      away: event.away_team,
+      home: event.home_team,
+      time: event.commence_time,
+      books,
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════════
+//  RENDER
+// ═══════════════════════════════════════════════════
+function loadDemo() {
+  const fresh = buildDemo();
+  // Simulate line movement in demo mode: randomly nudge a few spreads by 0.5
+  if (allGames.length) {
+    fresh.forEach(g => {
+      Object.keys(g.books).forEach(bk => {
+        if (Math.random() < 0.15) { // 15% chance per book to move
+          g.books[bk].s += Math.random() < 0.5 ? 0.5 : -0.5;
+        }
+      });
+      // re-enrich after nudge — use same edge logic as renderTable
+      const coversS = g.books.covers?.s ?? null;
+      let maxD = 0;
+      if (coversS !== null) {
+        const mktS = BOOKS_ORDER.filter(b => b.key !== 'covers' && g.books[b.key]).map(b => g.books[b.key].s ?? null).filter(v => v != null);
+        if (mktS.length) {
+          const bh = Math.max(...mktS), ba = Math.min(...mktS);
+          const sh = coversS === 0 || bh === 0 || Math.sign(coversS) === Math.sign(bh);
+          const sa = coversS === 0 || ba === 0 || Math.sign(coversS) === Math.sign(ba);
+          maxD = Math.max(sh ? coversS - bh : 0, sa ? ba - coversS : 0, 0);
+        }
+      }
+      g.maxDeltaVsCovers = maxD;
+    });
+  }
+  allGames = fresh;
+  recordHistory();
+  enableRefreshNow();
+  renderTable();
+  document.getElementById('last-fetch-time').textContent = 'Demo · Simulated refresh ' + new Date().toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit', second:'2-digit', hour12:true });
+}
+
+function renderTable() {
+  if (!allGames.length) { showEmpty('No games to display.'); return; }
+
+  const now = new Date();
+  // Filter out games that have clearly already started (time > 30 min ago)
+  // Be lenient: keep games whose date is today or future even if time is uncertain
+  const thirtyMinAgo = new Date(now - 30 * 60 * 1000);
+  let games = allGames.filter(g => {
+    const t = new Date(g.time);
+    return t > thirtyMinAgo;
+  });
+
+  // Conference filter
+  if (!confFilter.has('ALL')) {
+    games = games.filter(g =>
+      confFilter.has(getConf(g.away)) || confFilter.has(getConf(g.home))
+    );
+  }
+
+  // Sort
+  if (sortMode === 'variance') games.sort((a,b) => b.maxDeltaVsCovers - a.maxDeltaVsCovers);
+  else if (sortMode === 'time') games.sort((a,b) => new Date(a.time) - new Date(b.time));
+  else if (sortMode === 'covers') games.sort((a,b) => (a.books.covers?.s??0) - (b.books.covers?.s??0));
+  else if (sortMode === 'alpha') games.sort((a,b) => a.away.localeCompare(b.away));
+
+  const flagged = games.filter(g => g.maxDeltaVsCovers >= threshold).length;
+  document.getElementById('game-count').textContent = games.length;
+  document.getElementById('flag-count').textContent = flagged;
+
+  // Build table
+  const availBooks = BOOKS_ORDER.filter(b =>
+    games.some(g => g.books[b.key])
+  );
+
+  // Check if any game has a real Covers scraped line vs fallback consensus
+  const hasAnyCoversScraped = games.some(g => g.books.covers?.fromScraper);
+  const hasAnyPool = games.some(g => g.books.covers?.fromPool);
+  const coversColLabel = hasAnyPool ? 'POOL LINE' : hasAnyCoversScraped ? 'COVERS' : 'MKT LINE';
+  const coversColNote  = hasAnyPool ? 'pool · stale' : hasAnyCoversScraped ? 'consensus' : 'mkt median';
+
+  let html = `
+  <div class="table-scroll">
+  <table class="games-table">
+  <thead>
+    <tr class="col-headers">
+      <th style="text-align:left">MATCHUP<br><small style="font-weight:400;opacity:.6">fav spread shown</small></th>
+      ${availBooks.map(b => `<th colspan="1" ${b.ref?'class="covers-col"':''}  style="vertical-align:bottom;padding-bottom:6px">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+          ${getBookBadge(b.key, 26)}
+          <span style="font-size:0.58rem;letter-spacing:0.1em">${b.ref ? coversColLabel : b.label}</span>
+          <small style="font-weight:400;opacity:.6;font-size:0.5rem">${b.ref ? coversColNote : (viewMode==='juice' && !b.ref ? 'juice @ cvr' : b.note)}</small>
+        </div>
+      </th>`).join('')}
+    </tr>
+  </thead>
+  <tbody>`;
+
+  games.forEach((game, gi) => {
+    const varClass = game.maxDeltaVsCovers >= threshold ? 'var-high' :
+                     game.maxDeltaVsCovers >= threshold/2 ? 'var-mid' : 'var-low';
+    const varLabel = game.maxDeltaVsCovers >= threshold ? `⚠ ${game.maxDeltaVsCovers.toFixed(1)} pt gap` :
+                     game.maxDeltaVsCovers >= threshold/2 ? `${game.maxDeltaVsCovers.toFixed(1)} pt gap` : 'minimal';
+
+    const dt = new Date(game.time);
+    const timeStr = dt.toLocaleString('en-US', { weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit', hour12:true, timeZoneName:'short' });
+
+    const spreads = availBooks.filter(b=>!b.ref && game.books[b.key]).map(b=>game.books[b.key].s).filter(v=>v!=null);
+    const coversSpread = game.books.covers?.s ?? null;
+    const hasCoversLine = coversSpread !== null;
+    const gameId = game.id || (game.away + '@' + game.home);
+
+    // Edge definition: pool line is BETTER than the best market line available.
+    // "Better for home bettor" = higher spread (less negative / more positive).
+    // "Better for away bettor" = lower spread (more negative home = more points for away).
+    //
+    // We compare pool against the BEST market line (most favorable to each side),
+    // so an edge only exists when the pool beats *every* book, not just the worst one.
+    // Also require same sign (pool and market agree on who the favorite is).
+    //
+    // Example: pool=-1, books=[-1, -1, -1, -1, +1.5]
+    //   bestMarketHome = +1.5 → market already beats pool for home → NO home edge
+    //   bestMarketAway = +1.5 (home) = away gets -1.5 effectively → pool -1 is BETTER for away → edge
+    //   BUT signs differ (-1 vs +1.5) → sameSign check kills it → NO edge. Correct.
+    //
+    // Example: pool=-6.5, books=[-6, -6, -6]
+    //   bestMarketHome = -6 → bestMarketHome > coversSpread (-6 > -6.5) → market beats pool → NO home edge
+    //   bestMarketAway = -6 → coversSpread < bestMarketAway (-6.5 < -6) → pool gives away MORE → +0.5 away edge ✓
+
+    const bestMarketHome = spreads.length ? Math.max(...spreads) : null; // best for home bettor
+    const bestMarketAway = spreads.length ? Math.min(...spreads) : null; // best for away bettor (most negative)
+
+    // Same-sign guard: ignore when market and pool disagree on favorite
+    const sameSignHome = hasCoversLine && bestMarketHome !== null &&
+      (coversSpread === 0 || bestMarketHome === 0 || Math.sign(coversSpread) === Math.sign(bestMarketHome));
+    const sameSignAway = hasCoversLine && bestMarketAway !== null &&
+      (coversSpread === 0 || bestMarketAway === 0 || Math.sign(coversSpread) === Math.sign(bestMarketAway));
+
+    // Home edge: pool is better for home bettor = pool spread > best market spread
+    // (e.g. pool=-6.5 is WORSE for home than market=-6, so no home edge there)
+    // (e.g. pool=-5.5 is BETTER for home than market best=-6, so home edge=+0.5)
+    const edgeHome = sameSignHome ? coversSpread - bestMarketHome : 0;  // positive when pool > best mkt
+    // Away edge: pool is better for away bettor = pool spread < best market spread (more negative home)
+    const edgeAway = sameSignAway ? bestMarketAway - coversSpread : 0;  // positive when pool < best mkt
+
+    // Pick the side with the bigger edge; default to favorite's perspective when no edge
+    let dispSign, displayTeam, coversEdge;
+    if (edgeAway > edgeHome && edgeAway >= 0.5) {
+      dispSign = -1; displayTeam = game.away; coversEdge = edgeAway;
+    } else if (edgeHome >= 0.5) {
+      dispSign = 1; displayTeam = game.home; coversEdge = edgeHome;
+    } else {
+      const refSpread = hasCoversLine ? coversSpread : (bestMarketHome ?? 0);
+      const homeIsFav = refSpread < 0;
+      dispSign = homeIsFav ? 1 : -1;
+      displayTeam = homeIsFav ? game.home : game.away;
+      coversEdge = Math.max(edgeHome, edgeAway, 0);
+    }
+
+    // Best book = highest displayed value (most points for the bettor on the shown side).
+    // Always compare in display space (s * dispSign) so +7.5 > +7 > -7 always holds.
+    const spreadsDisp = spreads.map(s => s * dispSign);
+    const bestOtherDispVal = spreadsDisp.length ? Math.max(...spreadsDisp) : null;
+
+    // Pre-compute best (cheapest) juice across all non-Covers books at the Covers line
+    // so we can highlight only the single winner in juice mode
+    let bestJuice = null;
+    if (viewMode === 'juice' && hasCoversLine) {
+      availBooks.filter(b => !b.ref && game.books[b.key]).forEach(b => {
+        const ln = game.books[b.key];
+        const altJ = ln.allLines
+          ? juiceAtPoint(ln.allLines, coversSpread)
+          : undefined;
+        const onSame = Math.abs(ln.s - coversSpread) < 0.01;
+        const j = onSame ? ln.sj : (altJ ?? null);
+        if (j !== null && (bestJuice === null || j > bestJuice)) bestJuice = j;
+      });
+    }
+
+    // row markup
+    html += `
+    <tr class="game-group" onclick="toggleDetail('detail-${gi}', this)">
+      <td class="game-meta" rowspan="1">
+        <div class="game-meta-inner">
+          <div class="matchup-inner">
+            <div class="team-logo-wrap">
+              ${getTeamBadge(game.away)}
+              ${getTeamBadge(game.home)}
+            </div>
+            <div>
+              <div class="matchup">${abbrev(game.away)}<br><span style="opacity:.4;font-size:.7em">@</span> ${abbrev(game.home)}</div>
+              <span style="font-size:0.58rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--green);font-weight:700;font-family:'Syne',sans-serif;">LINE: ${abbrev(displayTeam)}</span>
+            </div>
+          </div>
+          <span class="game-time-tag">${timeStr}</span>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
+            <span class="var-badge ${varClass}">${varLabel}</span>
+            <span class="expand-arrow" style="font-size:0.6rem;color:var(--soft);letter-spacing:0.1em">▼ HISTORY</span>
+          </div>
+        </div>
+      </td>`;
+
+    availBooks.forEach(b => {
+      const line = game.books[b.key];
+      if (!line) {
+        html += `<td><div class="cell-inner"></div></td>`;
+        return;
+      }
+
+      const isRef = b.ref;
+      const sign = n => n > 0 ? `+${n}` : `${n}`;
+
+      // Movement arrow vs previous fetch
+      const prevKey = gameId + '|' + b.key;
+      const prevS = prevLines[prevKey];
+      let arrow = '';
+      if (prevS !== undefined && prevS !== line.s) {
+        // Higher spread = moved up (worse for bettor); lower = moved down (better)
+        arrow = line.s > prevS
+          ? `<span class="move-up">▲</span>`
+          : `<span class="move-down">▼</span>`;
+      }
+
+      if (isRef) {
+        // No scraped Covers line — show empty cell with dash
+        if (!hasCoversLine) {
+          html += `<td class="covers-col"><div class="cell-inner" style="opacity:0.35"><span class="cell-spread" style="color:var(--soft)">–</span><span class="cell-juice" style="color:var(--soft)">no line</span></div></td>`;
+          return;
+        }
+        let bgStyle = '', textStyle = '', edgeLabel = '';
+        if (coversEdge >= 0.5) {
+          const intensity = Math.min(coversEdge / 3.0, 1.0);
+          const alpha = 0.18 + intensity * 0.65;
+          const r = Math.round(45  - intensity * 20);
+          const g = Math.round(180 - intensity * 50);
+          const bv = Math.round(90  - intensity * 40);
+          bgStyle = `background:rgba(${r},${g},${bv},${alpha.toFixed(2)});`;
+          // Light mode: dark green text. Dark mode: white text with subtle outline for contrast.
+          // Store light-mode color as CSS var on the element; dark mode overrides via CSS class
+          const lightClr = `rgb(${Math.round(10+intensity*5)},${Math.round(100-intensity*30)},${Math.round(40-intensity*10)})`;
+          textStyle = `color:${lightClr};font-weight:700;`;
+          edgeLabel = `+${coversEdge.toFixed(1)}`;
+        }
+        if (viewMode === 'juice') {
+          // Juice mode: Covers cell shows the reference line in gold
+          html += `
+          <td class="covers-col">
+            <div class="cell-inner" style="background:rgba(180,130,50,0.14)">
+              <span class="cell-spread" style="color:var(--gold);font-weight:700">${sign((line.sRaw ?? line.s) * dispSign)}</span>
+              <span class="cell-juice" style="color:var(--gold)">${line.sj > 0 ? '+' : ''}${line.sj}</span>
+              <span style="font-size:0.48rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--soft);margin-top:1px">${line.fromConsensus ? '~MKT EST' : 'REF LINE'}</span>
+            </div>
+          </td>`;
+        } else {
+          html += `
+          <td class="covers-col">
+            <div class="cell-inner" style="${bgStyle}">
+              <span class="cell-spread covers-edge-text" style="${textStyle}" data-spread-cell data-game-id="${gameId}" data-book-key="covers" data-val="${line.s}" data-disp-sign="${dispSign}">${sign((line.sRaw ?? line.s) * dispSign)}${arrow}</span>
+              <span class="cell-juice" style="${(line.fromConsensus || line.fromPool) ? 'color:var(--soft);font-style:italic;' : ''}">${line.fromConsensus ? '~est' : line.fromPool ? 'pool' : (line.sj > 0 ? '+' : '') + line.sj}</span>
+              ${edgeLabel ? `<span style="font-size:0.52rem;letter-spacing:0.06em;margin-top:1px;color:inherit;opacity:0.85">${edgeLabel} EDGE</span>` : ''}
+            </div>
+          </td>`;
+        }
+      } else {
+        if (viewMode === 'juice') {
+          // Juice mode: show what this book charges for the exact Covers line.
+          // First check primary spread, then check alternate lines (spreads_alternate).
+          // coversSpread is stored in home-team terms — look up that exact point value.
+          const coversLineDisp = coversSpread * dispSign; // displayed (e.g. Villanova +5.5)
+          const bookLineDisp   = line.s * dispSign;
+
+          // Look up juice for the Covers spread point in this book's full line menu
+          // allLines is keyed by home-team point values (same convention as coversSpread)
+          // allLines keys are strings (e.g. '-5.5'), coversSpread is a number — match both ways
+          const altJuice = juiceAtPoint(line.allLines, coversSpread);
+          const onSameLine = Math.abs(line.s - coversSpread) < 0.01;
+          const hasLine = onSameLine || (altJuice !== undefined);
+          const juice = onSameLine ? line.sj : (altJuice ?? null);
+
+          if (hasLine && juice !== null) {
+            const isAlt = !onSameLine; // came from alternate lines
+            const isBestJuice = bestJuice !== null && juice === bestJuice;
+            const juiceBg = isBestJuice ? 'background:rgba(45,180,90,0.72);' : '';
+            const juiceClr = isBestJuice ? 'color:rgb(10,70,30);font-weight:700;' : '';
+            html += `
+            <td>
+              <div class="cell-inner" style="${juiceBg}">
+                <span class="cell-spread" style="font-size:0.95rem;letter-spacing:-0.01em;${juiceClr}">${juice > 0 ? '+' : ''}${juice}</span>
+                <span style="font-size:0.5rem;color:var(--soft);letter-spacing:0.06em;margin-top:2px">@ ${sign(coversLineDisp)}${isAlt ? ' ᵃˡᵗ' : ''}</span>
+              </div>
+            </td>`;
+          } else {
+            // Book doesn't offer the Covers line at all — even as an alternate
+            html += `
+            <td>
+              <div class="cell-inner" style="background:rgba(10,14,20,0.03);opacity:0.65">
+                <span style="font-size:0.56rem;color:var(--soft);letter-spacing:0.06em;line-height:1.4;text-align:center">
+                  Not offered<br><span style="color:var(--line)">${sign(coversLineDisp)}</span>
+                </span>
+                <span style="font-size:0.5rem;color:var(--line);letter-spacing:0.05em;margin-top:2px">main: ${sign(bookLineDisp)}</span>
+              </div>
+            </td>`;
+          }
+        } else {
+          // Standard spread view
+          const lineDisp = line.s * dispSign;
+          // spreadDelta: how many fewer points this book gives vs the reference (display space)
+          const refDisp = coversSpread !== null ? coversSpread * dispSign : bestOtherDispVal ?? 0;
+          const spreadDelta = hasCoversLine ? (refDisp - lineDisp) : 0; // positive = book is worse
+          const isBestBook = bestOtherDispVal !== null && Math.abs(lineDisp - bestOtherDispVal) < 0.01;
+          let cellCls = spreadDelta >= threshold ? 'flag-cell' : '';
+          if (isBestBook) cellCls = 'best-book-cell';
+          const ringStyle = isBestBook ? 'outline:2px solid #1a50a0;outline-offset:-2px;' : '';
+
+          html += `
+          <td>
+            <div class="cell-inner ${cellCls}" style="${ringStyle}">
+              <span class="cell-spread" data-spread-cell data-game-id="${gameId}" data-book-key="${b.key}" data-val="${line.s}" data-disp-sign="${dispSign}">${sign(lineDisp)}${arrow}</span>
+              <span class="cell-juice">${line.sj > 0 ? '+' : ''}${line.sj}</span>
+            </div>
+          </td>`;
+        }
+      }
+    });
+
+    // Max delta column
+    const dCls = game.maxDeltaVsCovers >= threshold ? 'delta-high' :
+                 game.maxDeltaVsCovers > 0.3 ? 'delta-mid' : 'delta-zero';
+    const rowId = 'detail-' + gi;
+
+    html += `
+    </tr>`;
+
+    // ── Expandable detail row ──
+    const gameIdForHistory = game.id || (game.away + '@' + game.home);
+    let histHtml = '<div class="history-grid">';
+    availBooks.forEach(b => {
+      const hist = lineHistory[gameIdForHistory + '|' + b.key] || [];
+      if (!hist.length && !game.books[b.key]) return;
+      histHtml += '<div class="history-book">';
+      histHtml += '<div class="history-book-name" style="display:flex;align-items:center;gap:5px">' + getBookBadge(b.key, 20) + b.label + '</div>';
+      histHtml += '<div class="history-entries">';
+      if (hist.length === 0 && game.books[b.key]) {
+        const s = game.books[b.key].s;
+        histHtml += '<div class="history-entry h-current"><span class="h-time">now</span><span class="h-val">' + (s > 0 ? '+' : '') + s + '</span></div>';
+      } else {
+        hist.forEach((h, hi) => {
+          const isCurrent = hi === hist.length - 1;
+          const prevS = hi > 0 ? hist[hi-1].s : null;
+          const moveClass = prevS === null ? '' : (h.s < prevS ? ' h-moved-better' : h.s > prevS ? ' h-moved-worse' : '');
+          const cls = isCurrent ? 'h-current' + moveClass : 'h-open' + moveClass;
+          histHtml += '<div class="history-entry ' + cls + '"><span class="h-time">' + h.time + '</span><span class="h-val">' + (h.s > 0 ? '+' : '') + h.s + '</span></div>';
+        });
+      }
+      histHtml += '</div></div>';
+    });
+    histHtml += '</div>';
+
+    html += '<tr class="detail-row" id="' + rowId + '">' +
+      '<td colspan="99"><div class="detail-panel">' +
+      '<div class="detail-title">Line History — ' + abbrev(game.away) + ' @ ' + abbrev(game.home) + '</div>' +
+      histHtml + '</div></td></tr>';
+
+    html += gi < games.length-1 ? '<tr class="group-sep"><td colspan="99"></td></tr>' : '';
+  });
+
+  html += `</tbody></table></div>`;
+  document.getElementById('main-content').innerHTML = html;
+  renderMobileCards(games, availBooks);
+  wireAnimations();
+
+}
+
+// ═══════════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════════
+// ── DARK MODE ──
+function toggleDark() {
+  const isDark = document.body.classList.toggle('dark');
+  const label = document.getElementById('dark-label');
+  if (label) label.textContent = isDark ? 'DARK' : 'LIGHT';
+  localStorage.setItem('coversedge-dark', isDark ? '1' : '0');
+}
+(function initDark() {
+  // Respect saved preference or system preference
+  const saved = localStorage.getItem('coversedge-dark');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  if (saved === '1' || (saved === null && prefersDark)) {
+    document.body.classList.add('dark');
+    const label = document.getElementById('dark-label');
+    if (label) label.textContent = 'DARK';
+  }
+})();
+
+// ── TEAM LOGOS ──
+// ESPN CDN has logos for most NCAAM teams by slug
+// We build a slug from the team name and try ESPN's asset CDN
+// Team brand colors for badge-style logos [bg, text]
+const TEAM_COLORS = {
+  // Big Ten
+  'purdue boilermakers':           ['#CEB888','#1a1a1a'],
+  'ohio state buckeyes':           ['#BB0000','#ffffff'],
+  'michigan state spartans':       ['#18453B','#ffffff'],
+  'michigan wolverines':           ['#00274C','#FFCB05'],
+  'indiana hoosiers':              ['#990000','#ffffff'],
+  'rutgers scarlet knights':       ['#CC0033','#ffffff'],
+  'maryland terrapins':            ['#E03A3E','#FFD520'],
+  'iowa hawkeyes':                 ['#FFCD00','#1a1a1a'],
+  'wisconsin badgers':             ['#C5050C','#ffffff'],
+  'illinois fighting illini':      ['#E84A27','#1a1a1a'],
+  'northwestern wildcats':         ['#4E2A84','#ffffff'],
+  'minnesota golden gophers':      ['#7A0019','#FFD700'],
+  'nebraska cornhuskers':          ['#E41C38','#ffffff'],
+  'penn state nittany lions':      ['#002D62','#ffffff'],
+  'ucla bruins':                   ['#2D68C4','#F2A900'],
+  'usc trojans':                   ['#990000','#FFC72C'],
+  'oregon ducks':                  ['#154733','#FEE123'],
+  'washington huskies':            ['#4B2E83','#E8D3A2'],
+  // ACC
+  'duke blue devils':              ['#003087','#ffffff'],
+  'north carolina tar heels':      ['#4B9CD3','#1a1a1a'],
+  'nc state wolfpack':             ['#CC0000','#ffffff'],
+  'virginia cavaliers':            ['#232D4B','#F84C1E'],
+  'virginia tech hokies':          ['#630031','#CF4420'],
+  'clemson tigers':                ['#F66733','#522D80'],
+  'florida state seminoles':       ['#782F40','#CEB888'],
+  'miami hurricanes':              ['#005030','#F47321'],
+  'pittsburgh panthers':           ['#003594','#FFB81C'],
+  'georgia tech yellow jackets':   ['#B3A369','#1a1a1a'],
+  'wake forest demon deacons':     ['#9E7E38','#1a1a1a'],
+  'boston college eagles':         ['#98002E','#BC9B6A'],
+  'notre dame fighting irish':     ['#0C2340','#C99700'],
+  'syracuse orange':               ['#D44500','#ffffff'],
+  'louisville cardinals':          ['#AD0000','#ffffff'],
+  // SEC
+  'kentucky wildcats':             ['#0033A0','#ffffff'],
+  'tennessee volunteers':          ['#FF8200','#1a1a1a'],
+  'auburn tigers':                 ['#0C2340','#E87722'],
+  'alabama crimson tide':          ['#9E1B32','#ffffff'],
+  'florida gators':                ['#0021A5','#FA4616'],
+  'lsu tigers':                    ['#461D7C','#FDD023'],
+  'arkansas razorbacks':           ['#9D2235','#ffffff'],
+  'mississippi state bulldogs':    ['#660000','#ffffff'],
+  'ole miss rebels':               ['#14213D','#CE1126'],
+  'georgia bulldogs':              ['#BA0C2F','#1a1a1a'],
+  'south carolina gamecocks':      ['#73000A','#ffffff'],
+  'vanderbilt commodores':         ['#866D4B','#1a1a1a'],
+  'texas a&m aggies':              ['#500000','#ffffff'],
+  'missouri tigers':               ['#F1B82D','#1a1a1a'],
+  'oklahoma sooners':              ['#841617','#FDF9D8'],
+  'texas longhorns':               ['#BF5700','#ffffff'],
+  // Big 12
+  'kansas jayhawks':               ['#0051A5','#E8000D'],
+  'baylor bears':                  ['#154734','#FFB81C'],
+  'texas tech red raiders':        ['#CC0000','#1a1a1a'],
+  'iowa state cyclones':           ['#C8102E','#F1BE48'],
+  'west virginia mountaineers':    ['#002855','#EAAA00'],
+  'tcu horned frogs':              ['#4D1979','#A3A9AC'],
+  'kansas state wildcats':         ['#512888','#ffffff'],
+  'oklahoma state cowboys':        ['#FF7300','#1a1a1a'],
+  'cincinnati bearcats':           ['#E00122','#000000'],
+  'houston cougars':               ['#C8102E','#ffffff'],
+  'ucf knights':                   ['#BA9B37','#1a1a1a'],
+  'byu cougars':                   ['#002E5D','#ffffff'],
+  'colorado buffaloes':            ['#CFB87C','#1a1a1a'],
+  'utah utes':                     ['#CC0000','#ffffff'],
+  'arizona wildcats':              ['#003366','#CC0033'],
+  'arizona state sun devils':      ['#8C1D40','#FFC627'],
+  // Big East
+  'depaul blue demons':            ['#005EB8','#ffffff'],
+  'marquette golden eagles':       ['#003366','#FFD200'],
+  'creighton bluejays':            ['#005CA9','#ffffff'],
+  'xavier musketeers':             ['#0D1C4A','#9E9E6E'],
+  'villanova wildcats':            ['#003366','#ffffff'],
+  "st. john's red storm":          ['#CC0000','#ffffff'],
+  'georgetown hoyas':              ['#041E42','#8D817B'],
+  'providence friars':             ['#000000','#75b2dd'],
+  'seton hall pirates':            ['#004B98','#ffffff'],
+  'butler bulldogs':               ['#13294B','#9EA2A2'],
+  'uconn huskies':                 ['#000E2F','#E2E0D6'],
+  // AAC
+  'wichita state shockers':        ['#006F51','#FFD200'],
+  'memphis tigers':                ['#003087','#898C8E'],
+  'tulsa golden hurricane':        ['#004077','#C8A84B'],
+  'east carolina pirates':         ['#4B1869','#C8A84B'],
+  'smu mustangs':                  ['#354CA1','#C8102E'],
+  'tulane green wave':             ['#006341','#418FDE'],
+  'south florida bulls':           ['#006747','#CFC493'],
+  'temple owls':                   ['#9D2235','#1a1a1a'],
+  'north texas mean green':        ['#00853E','#ffffff'],
+  'uab blazers':                   ['#1E6B52','#ffffff'],
+  'utsa roadrunners':              ['#F15A22','#002147'],
+  'rice owls':                     ['#003087','#C1A875'],
+  'florida atlantic owls':         ['#003366','#CC0000'],
+  'charlotte 49ers':               ['#046A38','#B9975B'],
+  'utep miners':                   ['#FF8200','#041E42'],
+  'middle tennessee blue raiders': ['#005DAA','#ffffff'],
+  'western kentucky hilltoppers':  ['#B01E24','#ffffff'],
+  'louisiana tech bulldogs':       ['#002F8B','#CC0000'],
+  // A-10
+  'dayton flyers':                 ['#CC0000','#1a1a1a'],
+  'vcu rams':                      ['#FFB300','#1a1a1a'],
+  'richmond spiders':              ['#990000','#1a1a1a'],
+  'davidson wildcats':             ['#CC0000','#ffffff'],
+  'george mason patriots':         ['#006633','#FFD700'],
+  'saint louis billikens':         ['#003DA5','#ffffff'],
+  'fordham rams':                  ['#710026','#ffffff'],
+  'rhode island rams':             ['#002147','#75b2dd'],
+  'umass minutemen':               ['#881c1c','#ffffff'],
+  'george washington colonials':   ['#033C5A','#AA9868'],
+  'la salle explorers':            ['#00539F','#ffffff'],
+  'duquesne dukes':                ['#041E42','#BA9B37'],
+  'saint joseph\'s hawks':         ['#9E1B32','#9E6B00'],
+  'loyola chicago ramblers':       ['#8B0000','#C8A956'],
+  // MWC / WAC
+  'gonzaga bulldogs':              ['#041E42','#C8102E'],
+  'san diego state aztecs':        ['#A6192E','#1a1a1a'],
+  'nevada wolf pack':              ['#003366','#8B8B00'],
+  'utah state aggies':             ['#003366','#A0A0A0'],
+  'boise state broncos':           ['#0033A0','#D64309'],
+  'wyoming cowboys':               ['#492F24','#FFC425'],
+  'colorado state rams':           ['#1E4D2B','#C8C372'],
+  'new mexico lobos':              ['#BA0C2F','#63666A'],
+  'air force falcons':             ['#003087','#A4A9AD'],
+  'fresno state bulldogs':         ['#CC0000','#1a1a1a'],
+  'san jose state spartans':       ['#0055A2','#E5A823'],
+  'unlv rebels':                   ['#CF0A2C','#807F84'],
+  'hawaii rainbow warriors':       ['#024731','#ffffff'],
+  'cal poly mustangs':             ['#154734','#C69214'],
+  'grand canyon antelopes':        ['#522398','#B59A57'],
+  'umkc roos':                     ['#004A97','#DFB517'],
+  'tarleton texans':               ['#4B0082','#b09a4f'],
+  // Sun Belt / CUSA
+  'arkansas state red wolves':     ['#CC0000','#000000'],
+  'louisiana ragin\' cajuns':      ['#CE181E','#F5A800'],
+  'troy trojans':                  ['#8B0000','#c0c0c0'],
+  'south alabama jaguars':         ['#0032A0','#BA1C21'],
+  'georgia southern eagles':       ['#002F6C','#9EA2A2'],
+  'appalachian state mountaineers':['#000000','#FFD700'],
+  'texas state bobcats':           ['#501214','#8B9DA0'],
+  'old dominion monarchs':         ['#003366','#8FB8E0'],
+  'marshall thundering herd':      ['#009900','#1a1a1a'],
+  'western michigan broncos':      ['#6C4023','#B5A268'],
+  'eastern michigan eagles':       ['#006633','#1a1a1a'],
+  'central michigan chippewas':    ['#6A0032','#F6B000'],
+  'northern illinois huskies':     ['#CC0000','#000000'],
+  'bowling green falcons':         ['#4B3800','#FF6600'],
+  'akron zips':                    ['#00285E','#A99065'],
+  'ohio bobcats':                  ['#00694E','#ffffff'],
+  'kent state golden flashes':     ['#002664','#EAAB00'],
+  'miami ohio redhawks':           ['#B61E2E','#1a1a1a'],
+  'ball state cardinals':          ['#BA0C2F','#BBBCBC'],
+  'buffalo bulls':                 ['#005BBB','#ffffff'],
+  'toledo rockets':                ['#15397F','#FFC20E'],
+  // Big South / NEC / Patriot / MAAC
+  'winthrop eagles':               ['#872434','#c0a06b'],
+  'campbell fighting camels':      ['#F26522','#1a1a1a'],
+  'presbyterian blue hose':        ['#00338D','#ffffff'],
+  'radford highlanders':           ['#CC0000','#ffffff'],
+  'high point panthers':           ['#4B0082','#D4AF37'],
+  'liberty flames':                ['#990000','#002868'],
+  'norfolk state spartans':        ['#007A33','#FFD700'],
+  'morgan state bears':            ['#FF6A00','#0D2149'],
+  'howard bison':                  ['#003A86','#C8102E'],
+  'coppin state eagles':           ['#003DA5','#BA0C2F'],
+  'nc central eagles':             ['#8B0000','#808080'],
+  'south carolina state bulldogs': ['#B22222','#0000CD'],
+  'delaware state hornets':        ['#D4251C','#004B98'],
+  'md eastern shore hawks':        ['#CC0000','#008000'],
+  'grambling state tigers':        ['#000000','#F0C000'],
+  'prairie view a&m panthers':     ['#4B0082','#FFD700'],
+  'texas southern tigers':         ['#800000','#808080'],
+  'alcorn state braves':           ['#522D80','#DFB517'],
+  'southern jaguars':              ['#002868','#BF0D3E'],
+  'jackson state tigers':          ['#003087','#F0C000'],
+  'alabama a&m bulldogs':          ['#8B0000','#ffffff'],
+  'alabama state hornets':         ['#000000','#FFD700'],
+  'bethune cookman wildcats':      ['#8B0000','#F0C000'],
+  'florida a&m rattlers':          ['#FF6600','#006600'],
+  'north carolina a&t aggies':     ['#003A86','#FFCC00'],
+  'savannah state tigers':         ['#003087','#FF6600'],
+  'charleston southern buccaneers':['#003087','#FFD700'],
+  'presbyterian blue hose':        ['#00338D','#ffffff'],
+  'east tennessee state buccaneers':['#041E42','#FFC425'],
+  'jacksonville state gamecocks':  ['#CC0000','#003DA5'],
+  'samford bulldogs':              ['#003087','#C8102E'],
+  'vmI keydets':                   ['#C41E3A','#ffcc00'],
+  'furman paladins':               ['#582C83','#ffffff'],
+  'mercer bears':                  ['#F26522','#1a1a1a'],
+  'western carolina catamounts':   ['#592C88','#CFC493'],
+  'citadel bulldogs':              ['#003DAD','#8B7536'],
+  'unc greensboro spartans':       ['#003F87','#FFD100'],
+  'wofford terriers':              ['#866D4B','#1a1a1a'],
+  'chattanooga mocs':              ['#00386B','#E0AA0F'],
+  'monmouth hawks':                ['#003A88','#C8102E'],
+  'rider broncs':                  ['#8B0000','#c0c0c0'],
+  'marist red foxes':              ['#C8102E','#1a1a1a'],
+  'canisius golden griffins':      ['#003478','#FFD100'],
+  'quinnipiac bobcats':            ['#003F72','#FFD100'],
+  'manhattan jaspers':             ['#006633','#9B7730'],
+  'saint peter\'s peacocks':       ['#004A97','#C41E3A'],
+  'iona gaels':                    ['#8B0000','#B8A88A'],
+  'niagara purple eagles':         ['#582C83','#ffffff'],
+  'fairfield stags':               ['#8B0000','#B8A88A'],
+  'siena saints':                  ['#006633','#ffffff'],
+  'army black knights':            ['#000000','#D4A017'],
+  'navy midshipmen':               ['#00205B','#C5B783'],
+  'colgate raiders':               ['#821019','#803800'],
+  'lehigh mountain hawks':         ['#653600','#B8A88A'],
+  'holy cross crusaders':          ['#602D89','#B9975B'],
+  'lafayette leopards':            ['#960026','#B4975A'],
+  'bucknell bison':                ['#003865','#E87722'],
+  'loyola maryland greyhounds':    ['#006633','#C8A84B'],
+  // Misc
+  'belmont bruins':                ['#003DA5','#C8102E'],
+  'lipscomb bisons':               ['#4B1869','#C8A956'],
+  'eastern kentucky colonels':     ['#860038','#c0c0c0'],
+  'morehead state eagles':         ['#003DA5','#FFD700'],
+  'tennessee tech golden eagles':  ['#4B0082','#FFD700'],
+  'tennessee state tigers':        ['#003087','#FFD700'],
+  'murray state racers':           ['#002469','#B5A268'],
+  'austin peay governors':         ['#CC0000','#1a1a1a'],
+  'siu edwardsville cougars':      ['#CC0000','#1a1a1a'],
+  'northern kentucky norse':       ['#FFCC00','#1a1a1a'],
+  'wright state raiders':          ['#009900','#FFD700'],
+  'miami ohio redhawks':           ['#B61E2E','#1a1a1a'],
+  'evansville purple aces':        ['#582C83','#ffffff'],
+  'illinois state redbirds':       ['#CC0000','#1a1a1a'],
+  'bradley braves':                ['#CC0000','#ffffff'],
+  'drake bulldogs':                ['#003DA5','#ffffff'],
+  'indiana state sycamores':       ['#00558C','#ffffff'],
+  'valparaiso beacons':            ['#6B3A2A','#D4B896'],
+  'southern illinois salukis':     ['#6B2F28','#D4A029'],
+  'northern iowa panthers':        ['#4B116F','#FFD700'],
+  'missouri state bears':          ['#5C0023','#B4975A'],
+  'oral roberts golden eagles':    ['#003DA5','#C8C372'],
+  'north dakota state bison':      ['#009A44','#FFD700'],
+  'south dakota state jackrabbits':['#003DA5','#FFD700'],
+  'south dakota coyotes':          ['#CC0000','#1a1a1a'],
+  'north dakota fighting hawks':   ['#009A44','#1a1a1a'],
+  'denver pioneers':               ['#864200','#B4975A'],
+  'omaha mavericks':               ['#C8102E','#000000'],
+  'cal state bakersfield roadrunners':['#003DA5','#FFD700'],
+  'cal state fullerton titans':    ['#003DA5','#FF8200'],
+  'long beach state beach':        ['#003DA5','#FFD700'],
+  'uc irvine anteaters':           ['#003DA5','#FFD700'],
+  'uc riverside highlanders':      ['#003DA5','#FFD700'],
+  'uc davis aggies':               ['#002855','#B4A46A'],
+  'uc santa barbara gauchos':      ['#003660','#FEBC11'],
+  'uc san diego tritons':          ['#182B49','#00629B'],
+  'cal poly mustangs':             ['#154734','#C69214'],
+  'hawaii rainbow warriors':       ['#024731','#ffffff'],
+  'stony brook seawolves':         ['#990000','#808080'],
+  'albany great danes':            ['#461660','#EFB21E'],
+  'binghamton bearcats':           ['#005A43','#ffffff'],
+  'maine black bears':             ['#003DA5','#B5A268'],
+  'new hampshire wildcats':        ['#003DA5','#ffffff'],
+  'vermont catamounts':            ['#009B48','#FFD700'],
+  'hartford hawks':                ['#C8102E','#1a1a1a'],
+  'boston university terriers':    ['#CC0000','#ffffff'],
+  'umbc retrievers':               ['#000000','#FFD700'],
+  'umass lowell river hawks':      ['#003DA5','#C8102E'],
+  'new orleans privateers':        ['#003DA5','#C8A84B'],
+  'southeastern louisiana lions':  ['#006633','#FFD700'],
+  'mcneese cowboys':               ['#003DA5','#FFD700'],
+  'nicholls colonels':             ['#862300','#c0c0c0'],
+  'northwestern state demons':     ['#4B0082','#FF8200'],
+  'lamar cardinals':               ['#CC0000','#1a1a1a'],
+  'incarnate word cardinals':      ['#CC0000','#1a1a1a'],
+  'abilene christian wildcats':    ['#461B7E','#FFD700'],
+  'houston christian huskies':     ['#0033A0','#C8102E'],
+  'stephen f. austin lumberjacks': ['#4B0082','#D4AF37'],
+  'sam houston bearkats':          ['#FF6A00','#1a1a1a'],
+  'unc wilmington seahawks':       ['#00A693','#003DA5'],
+  'winthrop eagles':               ['#872434','#c0a06b'],
+  'kennesaw state owls':           ['#FFCD00','#1a1a1a'],
+  'north alabama lions':           ['#461660','#B5A268'],
+  'eastern illinois panthers':     ['#004B98','#grey'],
+  'tennessee martin skyhawks':     ['#FF8200','#003DA5'],
+  'se missouri state redhawks':    ['#CC0000','#1a1a1a'],
+  'siu edwardsville cougars':      ['#CC0000','#1a1a1a'],
+  'bellarmine knights':            ['#003DA5','#C8102E'],
+  'lindenwood lions':              ['#003DA5','#BA0C2F'],
+  'queens royals':                 ['#003DA5','#FFD700'],
+  'tarleton texans':               ['#4B0082','#b09a4f'],
+  'utah tech trailblazers':        ['#CC0000','#003DA5'],
+  'dixie state trailblazers':      ['#CC0000','#003DA5'],
+  'st. thomas tommies':            ['#4B116F','#C8A956'],
+  'st. francis red flash':         ['#CC0000','#003DA5'],
+  'sacred heart pioneers':         ['#CC0000','#1a1a1a'],
+  'central connecticut blue devils':['#003DA5','#ffffff'],
+  'wagner seahawks':               ['#006747','#FFCC00'],
+  'long island university sharks': ['#003DA5','#FFD700'],
+  'mount st. mary\'s mountaineers':['#005687','#C8A84B'],
+  'fairleigh dickinson knights':   ['#003DA5','#C8102E'],
+  'south carolina upstate spartans':['#003DA5','#C8102E'],
+  'presbyterian blue hose':        ['#00338D','#ffffff'],
+  'nc central eagles':             ['#8B0000','#808080'],
+};
+
+// Sportsbook brand colors and initials for column header badges
+const BOOK_BRAND = {
+  covers:     { bg: '#c8380a', fg: '#ffffff', text: 'CVR',  full: 'Covers'     },
+  draftkings: { bg: '#1b5e20', fg: '#a8ff3e', text: 'DK',   full: 'DraftKings' },
+  fanduel:    { bg: '#1493ff', fg: '#ffffff', text: 'FD',   full: 'FanDuel'    },
+  caesars:    { bg: '#0a2240', fg: '#c8a951', text: 'CZR',  full: 'Caesars'    },
+  pinnacle:   { bg: '#e8c84a', fg: '#1a1200', text: 'PIN',  full: 'Pinnacle'   },
+  circa:      { bg: '#1a1a2e', fg: '#e94560', text: 'CRC',  full: 'Circa'      },
+  novig:      { bg: '#6c3bff', fg: '#ffffff', text: 'NVG',  full: 'Novig'      },
+  prophetx:   { bg: '#0d1117', fg: '#58a6ff', text: 'PX',   full: 'ProphetX'   },
+  bookmaker:  { bg: '#2c2c2c', fg: '#f0c040', text: 'BKM',  full: 'Bookmaker'  },
+  betonline:  { bg: '#c0392b', fg: '#ffffff', text: 'BOL',  full: 'BetOnline'  },
+};
+
+// Lighten a hex color for use in radial gradient highlight
+function lightenHex(hex, amt) {
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  return `rgba(${Math.min(255,r+Math.round(255*amt))},${Math.min(255,g+Math.round(255*amt))},${Math.min(255,b+Math.round(255*amt))},0.55)`;
+}
+
+function getBookBadge(bookKey, size = 28) {
+  const brand = BOOK_BRAND[bookKey] || { bg: '#555', fg: '#fff', text: (bookKey||'').slice(0,3).toUpperCase() };
+  const fs = size <= 28 ? 9 : 11;
+  const rx = Math.round(size * 0.18);
+  const gid = `gc_${bookKey}_${size}`;
+  const light = lightenHex(brand.bg, 0.35);
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg" style="display:block;border-radius:${rx}px;box-shadow:0 2px 5px rgba(0,0,0,0.25);flex-shrink:0">
+    <defs>
+      <radialGradient id="${gid}" cx="50%" cy="40%" r="60%">
+        <stop offset="0%" stop-color="${light}"/>
+        <stop offset="100%" stop-color="rgba(0,0,0,0.2)"/>
+      </radialGradient>
+    </defs>
+    <rect width="${size}" height="${size}" rx="${rx}" fill="${brand.bg}"/>
+    <rect width="${size}" height="${size}" rx="${rx}" fill="url(#${gid})"/>
+    <text x="${size/2}" y="${size*0.68}" font-family="'Syne',sans-serif" font-weight="800" font-size="${fs}"
+      fill="${brand.fg}" text-anchor="middle" letter-spacing="-0.3">${brand.text}</text>
+  </svg>`;
+}
+
+function getTeamBadge(teamName) {
+  const key = (teamName || '').toLowerCase().trim();
+  const colors = TEAM_COLORS[key] || ['#666','#fff'];
+  const words = (teamName || '').trim().split(' ').filter(w => w.length > 2 && !['the','of','at'].includes(w.toLowerCase()));
+  const initials = words.length >= 2
+    ? words[0][0].toUpperCase() + words[1][0].toUpperCase()
+    : (teamName||'').slice(0,2).toUpperCase();
+  const [bg, fg] = colors;
+  const gid = `gc_team_${initials}_${Math.random().toString(36).slice(2,6)}`;
+  const light = lightenHex(bg, 0.35);
+  return `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="border-radius:5px;box-shadow:0 2px 4px rgba(0,0,0,0.2)">
+    <defs>
+      <radialGradient id="${gid}" cx="50%" cy="40%" r="60%">
+        <stop offset="0%" stop-color="${light}"/>
+        <stop offset="100%" stop-color="rgba(0,0,0,0.2)"/>
+      </radialGradient>
+    </defs>
+    <rect width="24" height="24" rx="5" fill="${bg}"/>
+    <rect width="24" height="24" rx="5" fill="url(#${gid})"/>
+    <text x="12" y="16.5" font-family="'Syne',sans-serif" font-weight="800" font-size="10"
+      fill="${fg}" text-anchor="middle" letter-spacing="-0.5">${initials}</text>
+  </svg>`;
+}
+
+// ── ANIMATED SPREAD COUNTER ──
+// Track previous rendered values to detect changes
+const prevRenderedSpreads = {};
+
+function animateSpreadChange(el, newVal, gameId, bookKey, dispSign) {
+  const cacheKey = gameId + '|' + bookKey;
+  const prevRaw = prevRenderedSpreads[cacheKey];
+  prevRenderedSpreads[cacheKey] = newVal;
+
+  if (prevRaw === undefined || prevRaw === newVal) return;
+
+  const prevNum  = parseFloat(prevRaw);
+  const newNum   = parseFloat(newVal);
+  const sign_    = parseFloat(dispSign) || 1;
+
+  // "Better" = more points for the bettor on the displayed side
+  // dispSign=1 means we're showing home team → higher spread = more pts = better
+  // dispSign=-1 means showing away team  → lower stored value = more pts for away = better
+  // In displayed terms (after * dispSign): higher displayed number is always more pts
+  const displayedPrev = prevNum * sign_;
+  const displayedNew  = newNum  * sign_;
+  const movingBetter  = displayedNew > displayedPrev;
+
+  const slideClass = movingBetter ? 'slide-up' : 'slide-down';
+  const flashClass = movingBetter ? 'flash-green' : 'flash-red';
+
+  // Animate the number
+  el.classList.remove('slide-up', 'slide-down');
+  void el.offsetWidth; // force reflow
+  el.classList.add(slideClass);
+  el.addEventListener('animationend', () => el.classList.remove(slideClass), { once: true });
+
+  // Flash the cell background
+  const cell = el.closest('.cell-inner');
+  if (cell) {
+    cell.classList.remove('flash-green', 'flash-red');
+    void cell.offsetWidth;
+    cell.classList.add(flashClass);
+    cell.addEventListener('animationend', () => cell.classList.remove(flashClass), { once: true });
+  }
+}
+
+// Called after renderTable inserts HTML — wire up animation observers
+function renderMobileCards(games, availBooks) {
+  const container = document.getElementById('mobile-cards-content');
+  if (!container) return;
+
+  const nonRefBooks = availBooks.filter(b => !b.ref);
+
+  let html = '';
+  games.forEach(game => {
+    const coversSpread = game.books.covers?.s ?? 0;
+    const gameId = game.id || (game.away + '@' + game.home);
+    const dt = new Date(game.time);
+    const timeStr = dt.toLocaleString('en-US', { weekday:'short', hour:'numeric', minute:'2-digit', hour12:true, timeZone:'America/New_York' }) + ' ET';
+
+    // Edge detection (same logic as desktop — pool must beat the best market line, not just the worst)
+    const spreads = nonRefBooks.filter(b => game.books[b.key]).map(b => game.books[b.key].s).filter(v => v != null);
+    const bestMarketHome = spreads.length ? Math.max(...spreads) : null;
+    const bestMarketAway = spreads.length ? Math.min(...spreads) : null;
+    const sameSignHome = coversSpread != null && bestMarketHome !== null &&
+      (coversSpread === 0 || bestMarketHome === 0 || Math.sign(coversSpread) === Math.sign(bestMarketHome));
+    const sameSignAway = coversSpread != null && bestMarketAway !== null &&
+      (coversSpread === 0 || bestMarketAway === 0 || Math.sign(coversSpread) === Math.sign(bestMarketAway));
+    const edgeHome = sameSignHome ? coversSpread - bestMarketHome : 0;
+    const edgeAway = sameSignAway ? bestMarketAway - coversSpread : 0;
+
+    let dispSign, displayTeam, coversEdge;
+    if (edgeAway > edgeHome && edgeAway >= 0.5) {
+      dispSign = -1; displayTeam = game.away; coversEdge = edgeAway;
+    } else if (edgeHome >= 0.5) {
+      dispSign = 1; displayTeam = game.home; coversEdge = edgeHome;
+    } else {
+      const homeIsFav = coversSpread < 0;
+      dispSign = homeIsFav ? 1 : -1;
+      displayTeam = homeIsFav ? game.home : game.away;
+      coversEdge = 0;
+    }
+
+    const coversDisp = coversSpread * dispSign;
+    const coversLabel = sign(coversDisp);
+    const hasEdge = coversEdge >= 0.5;
+    const intensity = Math.min(coversEdge / 3.0, 1.0);
+    const alpha = 0.18 + intensity * 0.65;
+    const r = Math.round(45 - intensity * 20);
+    const g = Math.round(180 - intensity * 50);
+    const bv = Math.round(90 - intensity * 40);
+    const coversBg = hasEdge ? `rgba(${r},${g},${bv},${alpha.toFixed(2)})` : 'rgba(180,130,50,0.14)';
+    const coversClr = hasEdge
+      ? (document.body.classList.contains('dark') && alpha > 0.45 ? '#fff' : `rgb(${Math.round(10+intensity*5)},${Math.round(100-intensity*30)},${Math.round(40-intensity*10)})`)
+      : 'var(--gold)';
+
+    // Find best book for this game — highest displayed spread (most points for the bettor)
+    const dispSpreads = nonRefBooks.filter(b => game.books[b.key]).map(b => ({ key: b.key, disp: game.books[b.key].s * dispSign }));
+    const bestDisp = dispSpreads.length ? Math.max(...dispSpreads.map(d => d.disp)) : null;
+
+    html += `<div class="game-card">
+      <div class="game-card-header">
+        <div class="game-card-matchup">
+          <div class="team-logo-wrap">${getTeamBadge(game.away)}${getTeamBadge(game.home)}</div>
+          <div>
+            <div class="game-card-teams">${abbrev(game.away)}<br><span style="opacity:.4;font-size:.85em">@</span> ${abbrev(game.home)}</div>
+            <div class="game-card-meta">${timeStr} · <span style="color:var(--green);font-weight:700;">LINE: ${abbrev(displayTeam)}</span></div>
+          </div>
+        </div>
+        <div class="game-card-covers" style="background:${coversBg}">
+          <div class="cvr-num" style="color:${coversClr}">${coversLabel}</div>
+          <div class="cvr-label" style="color:${coversClr}">${game.books.covers?.fromPool ? 'Pool' : game.books.covers?.fromConsensus ? 'Mkt Est' : 'Covers'}</div>
+          ${hasEdge ? `<div class="cvr-edge" style="color:${coversClr}">+${coversEdge.toFixed(1)} edge</div>` : ''}
+        </div>
+      </div>
+      <div class="game-card-books">`;
+
+    nonRefBooks.forEach(b => {
+      const line = game.books[b.key];
+      if (!line) return;
+      const lineDisp = line.s * dispSign;
+      const isBest = bestDisp !== null && Math.abs(lineDisp - bestDisp) < 0.01;
+      const refDisp = coversSpread * dispSign;
+      const delta = refDisp - lineDisp; // positive = book is worse than reference
+      const isFlagged = delta >= threshold && !isBest;
+      const cls = isBest ? 'bk-best' : (isFlagged ? 'bk-flagged' : '');
+      html += `<div class="game-card-book ${cls}">
+        ${getBookBadge(b.key, 18)}
+        <div class="bk-spread">${sign(lineDisp)}</div>
+        <div class="bk-juice">${line.sj > 0 ? '+' : ''}${line.sj}</div>
+      </div>`;
+    });
+
+    html += `</div>
+      <div class="game-card-delta">
+        <span>max gap vs covers</span>
+        <span>${game.maxDeltaVsCovers > 0 ? '⚠ ' + game.maxDeltaVsCovers.toFixed(1) + ' pts' : '—'}</span>
+      </div>
+    </div>`;
+  });
+
+  container.innerHTML = html;
+}
+
+function wireAnimations() {
+  document.querySelectorAll('[data-spread-cell]').forEach(el => {
+    const gameId  = el.dataset.gameId;
+    const bookKey = el.dataset.bookKey;
+    const val     = el.dataset.val;
+    const ds      = el.dataset.dispSign || '1';
+    animateSpreadChange(el, val, gameId, bookKey, ds);
+  });
+}
+
+function toggleDetail(rowId, gameRow) {
+  const row = document.getElementById(rowId);
+  if (!row) return;
+  const isOpen = row.classList.toggle('open');
+  const arrow = gameRow.querySelector('.expand-arrow');
+  if (arrow) arrow.textContent = isOpen ? '▲ HISTORY' : '▼ HISTORY';
+}
+
+function sign(n) { return n > 0 ? `+${n}` : `${n}`; }
+
+function abbrev(name) {
+  if (!name) return '';
+  // Exact overrides for tricky names
+  const map = {
+    'Ohio State Buckeyes':'Ohio St.','Michigan State Spartans':'Mich. St.',
+    'Florida State Seminoles':'Fla. St.','Iowa State Cyclones':'Iowa St.',
+    'Kansas State Wildcats':'Kansas St.','Mississippi State Bulldogs':'Miss. St.',
+    'North Carolina State Wolfpack':'NC State','North Carolina Tar Heels':'UNC',
+    'North Texas Mean Green':'N. Texas','South Florida Bulls':'USF',
+    'Middle Tennessee Blue Raiders':'Mid. Tenn.','Western Kentucky Hilltoppers':'WKU',
+    'Southern Illinois Salukis':'S. Illinois','Northern Illinois Huskies':'N. Illinois',
+    'Eastern Michigan Eagles':'E. Michigan','Western Michigan Broncos':'W. Michigan',
+    'Central Michigan Chippewas':'C. Michigan','Southeast Missouri State Redhawks':'SE Mo. St.',
+    'Tennessee State Tigers':'Tenn. St.','Tennessee Tech Golden Eagles':'Tenn. Tech',
+    "St. John's Red Storm":"St. John's",'Saint Mary\'s Gaels':'St. Mary\'s',
+    'Saint Louis Billikens':'St. Louis','Saint Joseph\'s Hawks':'St. Joe\'s',
+    'UC Santa Barbara Gauchos':'UCSB','UC San Diego Tritons':'UCSD',
+    'UC Davis Aggies':'UC Davis','UC Irvine Anteaters':'UC Irvine',
+    'UC Riverside Highlanders':'UC Riverside','UT Arlington Mavericks':'UTA',
+    'UT Rio Grande Valley Vaqueros':'UTRGV','Texas A&M Aggies':'Texas A&M',
+    'UNC Wilmington Seahawks':'UNCW','UNC Greensboro Spartans':'UNCG',
+    'UNC Asheville Bulldogs':'UNCA','UNC Charlotte 49ers':'Charlotte',
+    'Loyola Chicago Ramblers':'Loyola Chi.','Loyola Maryland Greyhounds':'Loyola MD',
+    'Loyola Marymount Lions':'LMU','La Salle Explorers':'La Salle',
+    'DePaul Blue Demons':'DePaul','FIU Panthers':'FIU','FAU Owls':'FAU',
+    'UTSA Roadrunners':'UTSA','UTEP Miners':'UTEP',
+    'VCU Rams':'VCU','VMI Keydets':'VMI','UCF Knights':'UCF',
+    'UAB Blazers':'UAB','UNLV Rebels':'UNLV','UMBC Retrievers':'UMBC',
+    'UMKC Roos':'UMKC','UMass Minutemen':'UMass','UMass Lowell River Hawks':'UML',
+    'USC Trojans':'USC','LSU Tigers':'LSU','SMU Mustangs':'SMU',
+    'TCU Horned Frogs':'TCU','BYU Cougars':'BYU','VMI Keydets':'VMI',
+    'Pitt Panthers':'Pitt','Penn State Nittany Lions':'Penn St.',
+    'Penn Quakers':'Penn','Bryant Bulldogs':'Bryant',
+  };
+  if (map[name]) return map[name];
+
+  // Strip common suffixes (nickname words) to get the school portion
+  const nicknames = ['Aggies','Aztecs','Badgers','Bears','Beavers','Bearkats','Blue Demons','Blue Devils',
+    'Blue Hens','Blue Raiders','Bobcats','Boilermakers','Broncos','Broncs','Braves','Bruins','Buccaneers',
+    'Buffaloes','Bulldogs','Cardinals','Catamounts','Cavaliers','Chippewas','Colonels','Colonials',
+    'Commodores','Cornhuskers','Cougars','Cowboys','Crimson','Crimson Tide','Cyclones','Demon Deacons',
+    'Ducks','Eagles','Falcons','Fighting Hawks','Fighting Illini','Fighting Irish','Flames','Flash',
+    'Flyers','Friars','Gauchos','Gaels','Golden Eagles','Golden Flashes','Golden Gophers','Golden Grizzlies',
+    'Golden Hurricane','Gorillas','Governors','Green Wave','Greyhounds','Grizzlies','Hawkeyes','Hawks',
+    'Highlanders','Hilltoppers','Hoosiers','Hornets','Huskies','Ichabods','Jaguars','Jayhawks',
+    'Kangaroos','Knights','Lumberjacks','Moccasins','Monarchs','Mountaineers','Musketeers','Norse',
+    'Ospreys','Owls','Panthers','Paladins','Patriots','Penguins','Phoenix','Pirates','Racers',
+    'Rainbow Warriors','Rams','Ramblers','Razorbacks','Red Flash','Red Hawks','Red Storm','Redhawks',
+    'Retrievers','Roadrunners','Rockets','Salukis','Scarlet Knights','Sea Hawks','Seahawks','Seminoles',
+    'Shockers','Skyhawks','Sooners','Spartans','Spiders','Sun Devils','Sycamores','Tar Heels',
+    'Terrapins','Terriers','Tigers','Titans','Tornados','Trojans','Vaqueros','Vikings','Violets',
+    'Volunteers','Vulcans','War Eagles','Warriors','Wildcats','Wolf Pack','Wolfpack','Wolverines',
+    'Yellow Jackets','49ers','Mean Green','Blue Jays','Bluejays','Bison','Beacons',
+    'Big Green','Cardinal','Crimson','Ephs','Jaspers','Johnnies','Leathernecks',
+    'Mastodons','Midshipmen','Mavericks','Monks','Nanooks','Nittany Lions',
+    'Nor\'easters','Penmen','Pilots','Privateers','Quakers','River Hawks',
+    'Running Eagles','Seawolves','Skyhooks','Stags','Thunderbirds','Toreros',
+    'Tritons','Turtles','Waves','Warhawks','Zips'];
+
+  // Try to strip the nickname from the end
+  for (const nick of nicknames) {
+    if (name.endsWith(' ' + nick)) {
+      const school = name.slice(0, name.length - nick.length - 1).trim();
+      if (school.length > 0) return school;
+    }
+  }
+  // Fallback: return the full name (better than just the nickname)
+  return name;
+}
+
+function refreshNow() {
+  if (isLiveMode) {
+    fetchLiveData();
+  } else if (allGames.length) {
+    snapshotPrevLines();
+    loadDemo();
+  }
+}
+
+function enableRefreshNow() {
+  const btn = document.getElementById('refresh-now-btn');
+  if (!btn) return;
+  btn.disabled = false;
+  btn.style.opacity = '1';
+  btn.style.cursor = 'pointer';
+  btn.style.background = 'var(--cream)';
+  btn.style.borderColor = 'var(--ink)';
+}
+
+function setViewMode(mode) {
+  viewMode = mode;
+  if (allGames.length) renderTable();
+}
+
+function setSort(mode, el) {
+  sortMode = mode;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  if (allGames.length) renderTable();
+}
+
+function setConf(conf, el) {
+  if (conf === 'ALL') {
+    // ALL clears all specific filters
+    confFilter = new Set(['ALL']);
+  } else {
+    confFilter.delete('ALL');
+    if (confFilter.has(conf)) {
+      confFilter.delete(conf);
+      // If nothing left, revert to ALL
+      if (confFilter.size === 0) confFilter = new Set(['ALL']);
+    } else {
+      confFilter.add(conf);
+    }
+  }
+  // Sync button active states
+  document.querySelectorAll('.conf-btn').forEach(b => {
+    const c = b.getAttribute('data-conf');
+    b.classList.toggle('active', confFilter.has(c));
+  });
+  if (allGames.length) renderTable();
+}
+
+function updateThreshold(val) {
+  threshold = parseFloat(val);
+  document.getElementById('thresh-val').textContent = val;
+  if (allGames.length) renderTable();
+}
+
+function showLoading() {
+  document.getElementById('main-content').innerHTML = `<div class="state-panel"><div class="spinner"></div><h3>Fetching Lines…</h3><p>Pulling NCAAM odds from The Odds API</p></div>`;
+  const mc = document.getElementById('mobile-cards-content'); if (mc) mc.innerHTML = '';
+}
+
+function showEmpty(msg) {
+  document.getElementById('main-content').innerHTML = `<div class="state-panel"><h3>No Data</h3><p>${msg}</p><button class="btn btn-demo" onclick="loadDemo()">→ Load Demo Data</button></div>`;
+  const mc2 = document.getElementById('mobile-cards-content'); if (mc2) mc2.innerHTML = '';
+}
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + (type === 'success' || msg.startsWith('✓') ? 'toast-success' : 'toast-error');
+  t.style.display = 'block';
+  setTimeout(() => { t.style.display = 'none'; }, 5000);
+}
+
+// Clock
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toLocaleTimeString('en-US', {
+    hour:'numeric', minute:'2-digit', second:'2-digit',
+    timeZone:'America/New_York', hour12:true
+  }) + ' ET';
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── AUTO-REFRESH ──
+let refreshInterval = null;
+let refreshCountdown = 60;
+let refreshPeriod = 60; // seconds, 0 = off
+let isLiveMode = false;
+
+function setRefreshInterval(val) {
+  refreshPeriod = parseInt(val);
+  if (refreshInterval) clearInterval(refreshInterval);
+  refreshInterval = null;
+  if (refreshPeriod === 0) {
+    const chip = document.getElementById('refresh-chip');
+    if (chip) chip.textContent = 'OFF';
+    return;
+  }
+  refreshCountdown = refreshPeriod;
+  updateRefreshChip();
+  refreshInterval = setInterval(() => {
+    refreshCountdown--;
+    updateRefreshChip();
+    if (refreshCountdown <= 0) {
+      refreshCountdown = refreshPeriod;
+      if (isLiveMode) {
+        fetchLiveData();
+      } else {
+        snapshotPrevLines(); loadDemo();
+      }
+    }
+  }, 1000);
+}
+
+function startAutoRefresh() {
+  const sel = document.getElementById('refresh-select');
+  const val = sel ? parseInt(sel.value) : 60;
+  setRefreshInterval(val);
+}
+
+function stopAutoRefresh() {
+  if (refreshInterval) clearInterval(refreshInterval);
+  refreshInterval = null;
+  refreshPeriod = 0;
+  const sel = document.getElementById('refresh-select');
+  if (sel) sel.value = '0';
+  const chip = document.getElementById('refresh-chip');
+  if (chip) chip.textContent = 'OFF';
+}
+
+function updateRefreshChip() {
+  const chip = document.getElementById('refresh-chip');
+  if (!chip) return;
+  if (refreshPeriod === 0) { chip.textContent = 'OFF'; return; }
+  const m = Math.floor(refreshCountdown / 60);
+  const s = refreshCountdown % 60;
+  chip.textContent = m > 0 ? `in ${m}m ${s.toString().padStart(2,'0')}s` : `in ${refreshCountdown}s`;
+}
+
+// Load demo on page start so there's always something to see
+// Dark mode is handled by initDark() above — no auto-load on startup
+</script>
+</body>
+</html>
