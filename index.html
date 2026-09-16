@@ -904,6 +904,28 @@ body.dark .covers-edge-text { color: #ffffff !important; }
   background: transparent; border: 1.5px solid var(--line); color: var(--soft);
 }
 .help-forget:hover { border-color: var(--red); color: var(--red); }
+
+/* ── TOP PICKS LIST ── */
+.tp-row {
+  display: grid;
+  grid-template-columns: 26px 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--line);
+}
+.tp-row:last-child { border-bottom: none; }
+.tp-row:hover { background: rgba(10,14,20,0.04); }
+.tp-rank { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 0.8rem; color: var(--soft); text-align: center; }
+.tp-pick { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.82rem; color: var(--ink); line-height: 1.2; }
+.tp-pick .tp-vs { font-family: 'IBM Plex Mono', monospace; font-weight: 400; font-size: 0.6rem; color: var(--soft); text-transform: uppercase; letter-spacing: 0.06em; display: block; margin-top: 1px; }
+.tp-line { font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; color: var(--soft); white-space: nowrap; text-align: right; }
+.tp-line b { color: var(--ink); }
+.tp-edge {
+  font-family: 'Syne', sans-serif; font-weight: 800; font-size: 0.9rem;
+  color: var(--green); text-align: right; white-space: nowrap; min-width: 52px;
+}
+.tp-time { font-size: 0.56rem; color: var(--soft); letter-spacing: 0.05em; text-transform: uppercase; }
 </style>
 </head>
 <body>
@@ -1030,12 +1052,20 @@ body.dark .covers-edge-text { color: #ffffff !important; }
 
 <div class="controls-row">
   <div class="filter-bar">
-    <button class="filter-btn" data-sort="variance" onclick="setSort('variance',this)">↓ Most Variance</button>
-    <button class="filter-btn active" data-sort="time" onclick="setSort('time',this)">Game Time</button>
+    <button class="filter-btn active" data-sort="variance" onclick="setSort('variance',this)">↓ Biggest Edge</button>
+    <button class="filter-btn" data-sort="time" onclick="setSort('time',this)">Game Time</button>
     <button class="filter-btn" data-sort="covers" onclick="setSort('covers',this)">Covers Line</button>
     <button class="filter-btn" data-sort="alphabetical" onclick="setSort('alpha',this)">A–Z</button>
   </div>
   <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+    <div class="threshold-wrap">
+      Edge vs:
+      <select id="edge-mode" onchange="setEdgeMode(this.value)"
+        style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;background:var(--paper);color:var(--ink);border:1px solid var(--line);padding:4px 8px;letter-spacing:0.06em;cursor:pointer;outline:none;accent-color:var(--accent);">
+        <option value="sharpgap">Sharpest gap</option>
+        <option value="beatall">Beat every book</option>
+      </select>
+    </div>
     <div class="threshold-wrap">
       Highlight threshold:
       <input type="range" id="thresh" min="0.5" max="5" step="0.5" value="1.5" oninput="updateThreshold(this.value)">
@@ -1056,6 +1086,17 @@ body.dark .covers-edge-text { color: #ffffff !important; }
 <div class="status-bar">
   <span class="status-count">Showing <strong id="game-count">0</strong> games · <strong id="flag-count">0</strong> flagged</span>
   <span class="last-fetch" id="last-fetch-time">Not yet fetched</span>
+</div>
+
+<!-- TOP PICKS -->
+<div id="toppicks-bar" style="display:none;border:2px solid var(--ink);margin-bottom:18px;background:var(--cream);">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 16px;gap:12px;cursor:pointer;background:var(--ink);color:var(--paper);" onclick="toggleTopPicks()">
+    <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:0.78rem;letter-spacing:0.12em;text-transform:uppercase;">🎯 Top Picks This Week <span id="toppicks-count" style="opacity:0.7;font-weight:400;"></span></span>
+    <span id="toppicks-arrow" style="font-size:0.7rem;">▲</span>
+  </div>
+  <div id="toppicks-body" style="padding:6px 8px;">
+    <div id="toppicks-content"></div>
+  </div>
 </div>
 
 <!-- TABLE AREA -->
@@ -1079,7 +1120,7 @@ body.dark .covers-edge-text { color: #ffffff !important; }
       <div class="swatch" style="background:rgba(35,150,65,0.65);border:1px solid #2d7a45"></div>
       <div class="swatch" style="background:rgba(30,135,55,0.83);border:1px solid #2d7a45"></div>
     </div>
-    <span>Covers edge: +0.5 → +1.0 → +1.5 → +2.0+ pts vs best market</span>
+    <span>Your edge: +0.5 → +1.0 → +1.5 → +2.0+ pts (Covers vs the sharp benchmark)</span>
   </div>
   <div class="legend-item"><div class="swatch" style="background:rgba(30,80,160,0.12);border:2px solid #1a50a0;"></div><span>Best book (most points for bettor)</span></div>
   <div class="legend-item"><div class="swatch sw-flag"></div><span>Gap vs Covers exceeds threshold</span></div>
@@ -1242,12 +1283,72 @@ const API_KEY_MAP = {
 };
 
 let allGames = [];
-let sortMode = 'time';
+let sortMode = 'variance'; // default: biggest Covers-vs-sharp edge on top (the whole point of the tool)
 let confFilter = new Set(['ALL']); // active conference filters (multi-select)
 let threshold = 1.5;
 let prevLines = {}; // snapshot of previous spreads keyed by gameId+bookKey
 let viewMode = 'spread'; // 'spread' or 'juice'
 let lineHistory = {}; // gameId|bookKey → [{time, s}]
+
+// ═══════════════════════════════════════════════════
+//  EDGE ENGINE — the core of the tool
+// ═══════════════════════════════════════════════════
+// The recommended pick is the side where the Covers/pool line is most GENEROUS
+// relative to the sharp market. Two benchmark modes the user can switch between:
+//   'sharpgap' (default) — biggest gap between Covers and ANY single sharp book.
+//                          Every game gets a value, so the whole slate ranks cleanly.
+//   'beatall'            — stricter: Covers must beat EVERY book (incl. retail).
+const SHARP_KEYS = ['pinnacle', 'circa', 'novig', 'prophetx'];
+let edgeMode = 'sharpgap';
+
+// Returns { hasCovers, coversSpread, edge, dispSign, displayTeam, refSpread, refLabel }
+// edge     = points of value on the recommended side (>= 0)
+// dispSign = +1 → home is the pick/shown side, -1 → away
+function computeEdge(game) {
+  const covers = game.books.covers?.s ?? null;
+  const res = {
+    hasCovers: covers !== null, coversSpread: covers,
+    edge: 0, dispSign: 0, displayTeam: null, refSpread: null,
+    refLabel: edgeMode === 'sharpgap' ? 'vs sharp' : 'vs field',
+  };
+  const sharp = edgeMode === 'sharpgap';
+  let comp = (sharp ? SHARP_KEYS : BOOKS_ORDER.filter(b => b.key !== 'covers').map(b => b.key))
+    .map(k => game.books[k]?.s).filter(v => v != null);
+  // In sharp mode with no sharp book on the board, fall back to all books so the game still ranks.
+  if (!comp.length && sharp) {
+    comp = BOOKS_ORDER.filter(b => b.key !== 'covers').map(b => game.books[b.key]?.s).filter(v => v != null);
+  }
+
+  if (covers === null || !comp.length) {
+    const ref = covers !== null ? covers : (comp.length ? Math.max(...comp) : 0);
+    const homeIsFav = ref < 0;
+    res.dispSign = homeIsFav ? 1 : -1;
+    res.displayTeam = homeIsFav ? game.home : game.away;
+    return res;
+  }
+
+  // Benchmark spread on each side. sharpgap looks at the sharp book that most favors
+  // that side (the biggest gap); beatall requires beating the best of the whole field.
+  const homeRef = sharp ? Math.min(...comp) : Math.max(...comp);
+  const awayRef = sharp ? Math.max(...comp) : Math.min(...comp);
+  const sameHome = covers === 0 || homeRef === 0 || Math.sign(covers) === Math.sign(homeRef);
+  const sameAway = covers === 0 || awayRef === 0 || Math.sign(covers) === Math.sign(awayRef);
+  const edgeHome = sameHome ? covers - homeRef : 0; // + when Covers gives home more points than the benchmark
+  const edgeAway = sameAway ? awayRef - covers : 0; // + when Covers gives away more points
+
+  if (edgeAway > edgeHome && edgeAway >= 0.5) {
+    res.dispSign = -1; res.displayTeam = game.away; res.edge = edgeAway; res.refSpread = awayRef;
+  } else if (edgeHome >= 0.5) {
+    res.dispSign = 1; res.displayTeam = game.home; res.edge = edgeHome; res.refSpread = homeRef;
+  } else {
+    const homeIsFav = covers < 0;
+    res.dispSign = homeIsFav ? 1 : -1;
+    res.displayTeam = homeIsFav ? game.home : game.away;
+    res.edge = Math.max(edgeHome, edgeAway, 0);
+    res.refSpread = res.dispSign === 1 ? homeRef : awayRef;
+  }
+  return res;
+}
 
 // ═══════════════════════════════════════════════════
 //  DEMO DATA (realistic March 2026 NCAAM slate)
@@ -2478,15 +2579,20 @@ function renderTable() {
     );
   }
 
+  // Compute the edge for every game under the current benchmark mode, then sort/flag on it.
+  games.forEach(g => { g._edge = computeEdge(g); });
+
   // Sort
-  if (sortMode === 'variance') games.sort((a,b) => b.maxDeltaVsCovers - a.maxDeltaVsCovers);
+  if (sortMode === 'variance') games.sort((a,b) => b._edge.edge - a._edge.edge);
   else if (sortMode === 'time') games.sort((a,b) => new Date(a.time) - new Date(b.time));
   else if (sortMode === 'covers') games.sort((a,b) => (a.books.covers?.s??0) - (b.books.covers?.s??0));
   else if (sortMode === 'alpha') games.sort((a,b) => a.away.localeCompare(b.away));
 
-  const flagged = games.filter(g => g.maxDeltaVsCovers >= threshold).length;
+  const flagged = games.filter(g => g._edge.edge >= threshold).length;
   document.getElementById('game-count').textContent = games.length;
   document.getElementById('flag-count').textContent = flagged;
+
+  renderTopPicks(games);
 
   // Build table
   const availBooks = BOOKS_ORDER.filter(b =>
@@ -2517,10 +2623,13 @@ function renderTable() {
   <tbody>`;
 
   games.forEach((game, gi) => {
-    const varClass = game.maxDeltaVsCovers >= threshold ? 'var-high' :
-                     game.maxDeltaVsCovers >= threshold/2 ? 'var-mid' : 'var-low';
-    const varLabel = game.maxDeltaVsCovers >= threshold ? `⚠ ${game.maxDeltaVsCovers.toFixed(1)} pt gap` :
-                     game.maxDeltaVsCovers >= threshold/2 ? `${game.maxDeltaVsCovers.toFixed(1)} pt gap` : 'minimal';
+    const E = game._edge || computeEdge(game);
+    const dispSign = E.dispSign, displayTeam = E.displayTeam, coversEdge = E.edge;
+
+    const varClass = coversEdge >= threshold ? 'var-high' :
+                     coversEdge >= threshold/2 ? 'var-mid' : 'var-low';
+    const varLabel = coversEdge >= threshold ? `⚠ ${coversEdge.toFixed(1)} pt edge` :
+                     coversEdge >= threshold/2 ? `${coversEdge.toFixed(1)} pt edge` : 'minimal';
 
     const dt = new Date(game.time);
     const timeStr = dt.toLocaleString('en-US', { weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit', hour12:true, timeZoneName:'short' });
@@ -2529,53 +2638,6 @@ function renderTable() {
     const coversSpread = game.books.covers?.s ?? null;
     const hasCoversLine = coversSpread !== null;
     const gameId = game.id || (game.away + '@' + game.home);
-
-    // Edge definition: pool line is BETTER than the best market line available.
-    // "Better for home bettor" = higher spread (less negative / more positive).
-    // "Better for away bettor" = lower spread (more negative home = more points for away).
-    //
-    // We compare pool against the BEST market line (most favorable to each side),
-    // so an edge only exists when the pool beats *every* book, not just the worst one.
-    // Also require same sign (pool and market agree on who the favorite is).
-    //
-    // Example: pool=-1, books=[-1, -1, -1, -1, +1.5]
-    //   bestMarketHome = +1.5 → market already beats pool for home → NO home edge
-    //   bestMarketAway = +1.5 (home) = away gets -1.5 effectively → pool -1 is BETTER for away → edge
-    //   BUT signs differ (-1 vs +1.5) → sameSign check kills it → NO edge. Correct.
-    //
-    // Example: pool=-6.5, books=[-6, -6, -6]
-    //   bestMarketHome = -6 → bestMarketHome > coversSpread (-6 > -6.5) → market beats pool → NO home edge
-    //   bestMarketAway = -6 → coversSpread < bestMarketAway (-6.5 < -6) → pool gives away MORE → +0.5 away edge ✓
-
-    const bestMarketHome = spreads.length ? Math.max(...spreads) : null; // best for home bettor
-    const bestMarketAway = spreads.length ? Math.min(...spreads) : null; // best for away bettor (most negative)
-
-    // Same-sign guard: ignore when market and pool disagree on favorite
-    const sameSignHome = hasCoversLine && bestMarketHome !== null &&
-      (coversSpread === 0 || bestMarketHome === 0 || Math.sign(coversSpread) === Math.sign(bestMarketHome));
-    const sameSignAway = hasCoversLine && bestMarketAway !== null &&
-      (coversSpread === 0 || bestMarketAway === 0 || Math.sign(coversSpread) === Math.sign(bestMarketAway));
-
-    // Home edge: pool is better for home bettor = pool spread > best market spread
-    // (e.g. pool=-6.5 is WORSE for home than market=-6, so no home edge there)
-    // (e.g. pool=-5.5 is BETTER for home than market best=-6, so home edge=+0.5)
-    const edgeHome = sameSignHome ? coversSpread - bestMarketHome : 0;  // positive when pool > best mkt
-    // Away edge: pool is better for away bettor = pool spread < best market spread (more negative home)
-    const edgeAway = sameSignAway ? bestMarketAway - coversSpread : 0;  // positive when pool < best mkt
-
-    // Pick the side with the bigger edge; default to favorite's perspective when no edge
-    let dispSign, displayTeam, coversEdge;
-    if (edgeAway > edgeHome && edgeAway >= 0.5) {
-      dispSign = -1; displayTeam = game.away; coversEdge = edgeAway;
-    } else if (edgeHome >= 0.5) {
-      dispSign = 1; displayTeam = game.home; coversEdge = edgeHome;
-    } else {
-      const refSpread = hasCoversLine ? coversSpread : (bestMarketHome ?? 0);
-      const homeIsFav = refSpread < 0;
-      dispSign = homeIsFav ? 1 : -1;
-      displayTeam = homeIsFav ? game.home : game.away;
-      coversEdge = Math.max(edgeHome, edgeAway, 0);
-    }
 
     // Best book = highest displayed value (most points for the bettor on the shown side).
     // Always compare in display space (s * dispSign) so +7.5 > +7 > -7 always holds.
@@ -2609,7 +2671,7 @@ function renderTable() {
             </div>
             <div>
               <div class="matchup">${abbrev(game.away)}<br><span style="opacity:.4;font-size:.7em">@</span> ${abbrev(game.home)}</div>
-              <span style="font-size:0.58rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--green);font-weight:700;font-family:'Syne',sans-serif;">LINE: ${abbrev(displayTeam)}</span>
+              <span style="font-size:0.58rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--green);font-weight:700;font-family:'Syne',sans-serif;">${coversEdge >= 0.5 ? '★ PICK' : 'LINE'}: ${abbrev(displayTeam)}${coversEdge >= 0.5 ? ` +${coversEdge.toFixed(1)} <span style="opacity:.7;font-weight:400">${E.refLabel}</span>` : ''}</span>
             </div>
           </div>
           <span class="game-time-tag">${timeStr}</span>
@@ -2743,9 +2805,6 @@ function renderTable() {
       }
     });
 
-    // Max delta column
-    const dCls = game.maxDeltaVsCovers >= threshold ? 'delta-high' :
-                 game.maxDeltaVsCovers > 0.3 ? 'delta-mid' : 'delta-zero';
     const rowId = 'detail-' + gi;
 
     html += `
@@ -2789,6 +2848,57 @@ function renderTable() {
   renderMobileCards(games, availBooks);
   wireAnimations();
 
+}
+
+// ── TOP PICKS THIS WEEK ──
+// The 25 biggest edges across the visible slate — your weekly ballot.
+function renderTopPicks(games) {
+  const bar = document.getElementById('toppicks-bar');
+  const content = document.getElementById('toppicks-content');
+  const countEl = document.getElementById('toppicks-count');
+  if (!bar || !content) return;
+
+  const picks = games
+    .map(g => ({ g, e: g._edge || computeEdge(g) }))
+    .filter(x => x.e.hasCovers && x.e.edge >= 0.5)
+    .sort((a, b) => b.e.edge - a.e.edge)
+    .slice(0, 25);
+
+  if (!picks.length) { bar.style.display = 'none'; return; }
+  bar.style.display = '';
+  countEl.textContent = '· ' + picks.length + ' with an edge';
+
+  content.innerHTML = picks.map((x, i) => {
+    const { g, e } = x;
+    const dt = new Date(g.time);
+    const when = dt.toLocaleString('en-US', { weekday:'short', hour:'numeric', minute:'2-digit', hour12:true, timeZone:'America/New_York' });
+    const pickLine = (e.coversSpread * e.dispSign);
+    const refLine  = e.refSpread != null ? (e.refSpread * e.dispSign) : null;
+    const flag = e.edge >= threshold;
+    return `<div class="tp-row">
+      <div class="tp-rank">${i + 1}</div>
+      <div>
+        <div class="tp-pick">${abbrev(e.displayTeam)} ${sign(pickLine)}
+          <span class="tp-vs">${abbrev(g.away)} @ ${abbrev(g.home)} · <span class="tp-time">${when} ET</span></span>
+        </div>
+      </div>
+      <div class="tp-line">Covers <b>${sign(pickLine)}</b>${refLine != null ? `<br>${e.refLabel} <b>${sign(refLine)}</b>` : ''}</div>
+      <div class="tp-edge" style="${flag ? '' : 'color:var(--soft)'}">+${e.edge.toFixed(1)}</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleTopPicks() {
+  const body = document.getElementById('toppicks-body');
+  const arrow = document.getElementById('toppicks-arrow');
+  const open = body.style.display === 'none';
+  body.style.display = open ? '' : 'none';
+  arrow.textContent = open ? '▲' : '▼';
+}
+
+function setEdgeMode(mode) {
+  edgeMode = mode;
+  if (allGames.length) renderTable();
 }
 
 // ═══════════════════════════════════════════════════
@@ -3238,28 +3348,11 @@ function renderMobileCards(games, availBooks) {
     const dt = new Date(game.time);
     const timeStr = dt.toLocaleString('en-US', { weekday:'short', hour:'numeric', minute:'2-digit', hour12:true, timeZone:'America/New_York' }) + ' ET';
 
-    // Edge detection (same logic as desktop — pool must beat the best market line, not just the worst)
-    const spreads = nonRefBooks.filter(b => game.books[b.key]).map(b => game.books[b.key].s).filter(v => v != null);
-    const bestMarketHome = spreads.length ? Math.max(...spreads) : null;
-    const bestMarketAway = spreads.length ? Math.min(...spreads) : null;
-    const sameSignHome = coversSpread != null && bestMarketHome !== null &&
-      (coversSpread === 0 || bestMarketHome === 0 || Math.sign(coversSpread) === Math.sign(bestMarketHome));
-    const sameSignAway = coversSpread != null && bestMarketAway !== null &&
-      (coversSpread === 0 || bestMarketAway === 0 || Math.sign(coversSpread) === Math.sign(bestMarketAway));
-    const edgeHome = sameSignHome ? coversSpread - bestMarketHome : 0;
-    const edgeAway = sameSignAway ? bestMarketAway - coversSpread : 0;
-
-    let dispSign, displayTeam, coversEdge;
-    if (edgeAway > edgeHome && edgeAway >= 0.5) {
-      dispSign = -1; displayTeam = game.away; coversEdge = edgeAway;
-    } else if (edgeHome >= 0.5) {
-      dispSign = 1; displayTeam = game.home; coversEdge = edgeHome;
-    } else {
-      const homeIsFav = coversSpread < 0;
-      dispSign = homeIsFav ? 1 : -1;
-      displayTeam = homeIsFav ? game.home : game.away;
-      coversEdge = 0;
-    }
+    // Edge detection — shared engine, current benchmark mode.
+    const E = game._edge || computeEdge(game);
+    const dispSign = E.dispSign || (coversSpread < 0 ? 1 : -1);
+    const displayTeam = E.displayTeam || (coversSpread < 0 ? game.home : game.away);
+    const coversEdge = E.edge;
 
     const coversDisp = coversSpread * dispSign;
     const coversLabel = sign(coversDisp);
@@ -3284,7 +3377,7 @@ function renderMobileCards(games, availBooks) {
           <div class="team-logo-wrap">${getTeamBadge(game.away)}${getTeamBadge(game.home)}</div>
           <div>
             <div class="game-card-teams">${abbrev(game.away)}<br><span style="opacity:.4;font-size:.85em">@</span> ${abbrev(game.home)}</div>
-            <div class="game-card-meta">${timeStr} · <span style="color:var(--green);font-weight:700;">LINE: ${abbrev(displayTeam)}</span></div>
+            <div class="game-card-meta">${timeStr} · <span style="color:var(--green);font-weight:700;">${coversEdge >= 0.5 ? '★ PICK' : 'LINE'}: ${abbrev(displayTeam)}${coversEdge >= 0.5 ? ' +' + coversEdge.toFixed(1) : ''}</span></div>
           </div>
         </div>
         <div class="game-card-covers" style="background:${coversBg}">
@@ -3313,8 +3406,8 @@ function renderMobileCards(games, availBooks) {
 
     html += `</div>
       <div class="game-card-delta">
-        <span>max gap vs covers</span>
-        <span>${game.maxDeltaVsCovers > 0 ? '⚠ ' + game.maxDeltaVsCovers.toFixed(1) + ' pts' : '—'}</span>
+        <span>edge ${E.refLabel || ''}</span>
+        <span>${coversEdge >= 0.5 ? '⚠ ' + coversEdge.toFixed(1) + ' pts' : '—'}</span>
       </div>
     </div>`;
   });
