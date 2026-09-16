@@ -1063,6 +1063,7 @@ body.dark .covers-edge-text { color: #ffffff !important; }
       <select id="edge-mode" onchange="setEdgeMode(this.value)"
         style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;background:var(--paper);color:var(--ink);border:1px solid var(--line);padding:4px 8px;letter-spacing:0.06em;cursor:pointer;outline:none;accent-color:var(--accent);">
         <option value="truevig">Sharp true line (vig-adj)</option>
+        <option value="consensus">Sharp consensus (median)</option>
         <option value="sharpgap">Sharpest gap</option>
         <option value="beatall">Beat every book</option>
       </select>
@@ -1141,31 +1142,48 @@ body.dark .covers-edge-text { color: #ffffff !important; }
     </div>
     <div class="help-body">
 
-      <h3>Every day · about 2 minutes</h3>
-      <ol>
-        <li>Open this page. Your Odds API key is saved, and the <b>last board you pulled shows instantly</b> — no API call, no credits spent.</li>
-        <li>To pull <b>today's fresh lines</b>, click <b>⬇ Fetch Lines</b> once. (This is the only thing that spends credits.)</li>
-        <li><b>To compare against your Covers pool</b>, expand <b>⚡ Pool Lines</b> and follow its 3 steps: open your pool pick page → paste the one-line console command it gives you → click <b>⬇ Load from Clipboard</b>, then Fetch Lines.</li>
-      </ol>
-      <div class="help-note"><b>Protecting your monthly credits:</b> one Fetch Lines ≈ 12 of your 500 monthly credits, so ~40 pulls a month. The <b>⚡ credits-left counter</b> under the key box shows how many remain. Leave <b>↻ Auto-Refresh</b> on <b>OFF</b> (the default) and just click Fetch when you want an update — auto-refresh every 60s would drain the month in a single evening.</div>
+      <div class="help-note" style="margin-bottom:14px;color:var(--ink)"><b>The idea:</b> two kinds of line. Your <b>Covers pool line is your locked reference</b> — you load it <b>once</b> when the pool posts the week. The <b>sportsbook lines are live</b> — you pull them <b>fresh each session</b>. Your edge is how far your locked pool number sits from the sharp market.</div>
 
-      <h3>First-time setup · once</h3>
+      <h3>① When you open the site (each session)</h3>
       <ol>
-        <li>Get a free key at <a href="https://the-odds-api.com" target="_blank" rel="noopener">the-odds-api.com</a> — no credit card needed.</li>
-        <li>Paste it into the <b>The-Odds-API Key</b> box and click <b>⬇ Fetch Lines</b>.</li>
-        <li>It's remembered from then on — you won't need to paste it again on this device.</li>
+        <li>Your key is saved and the <b>last board shows instantly</b> — no API call, no credits.</li>
+        <li>Click <b>⬇ Fetch Lines</b> once to pull today's fresh sportsbook lines. It re-ranks by biggest edge. <i>(This is the only thing that spends credits.)</i></li>
+        <li>Read the <b>🎯 Top Picks This Week</b> panel — your ballot, ranked by edge, each with the best book to bet it at.</li>
       </ol>
 
-      <h3>No key handy?</h3>
+      <h3>② Load your Covers pool lines (once a week)</h3>
+      <p style="font-size:0.7rem;color:var(--soft);line-height:1.6;margin-bottom:6px">Do this when your pool posts the week's slate. These are the <b>accurate lines you're graded against</b> — they don't move, so you only load them once (unless your pool revises one).</p>
+      <ol>
+        <li>Expand <b>⚡ Pool Lines</b> (below the key box).</li>
+        <li>Open your <a href="https://contests.covers.com/officepools/picks/bets/a680d7a0-8943-439e-bd8d-b37300ba6ac2" target="_blank" rel="noopener">Covers pool pick page ↗</a> in another tab; let it fully load.</li>
+        <li>Press <kbd>F12</kbd> → <b>Console</b> → paste <kbd>copy(document.documentElement.outerHTML)</kbd> → Enter.</li>
+        <li>Back here → <b>⬇ Load from Clipboard</b>. Then <b>Fetch Lines</b>.</li>
+      </ol>
+      <div class="help-note"><b>Confirm it worked:</b> the reference column header should read <b>POOL LINE</b> (gold) and each reference cell shows a small <b>“pool”</b> tag, with the status reading <b>“Live · Pool lines + API.”</b> If it says <b>MKT LINE</b> or <b>COVERS</b> instead, you're on a market estimate, not your pool number — (re)load your pool lines. Games whose books aren't posted yet show your pool line with no comparison; just hit Fetch Lines again once the books are up.</div>
+
+      <h3>Picking your benchmark (“Edge vs”)</h3>
       <ul>
-        <li>Click <b>Use Demo Data</b> for a full sample board with today's date, so you can see the layout without a key.</li>
+        <li><b>Sharp true line (vig-adj)</b> — default. Compares your line to each sharp book's <i>vig-adjusted</i> true number, so a book showing −10 at heavy −160 juice counts as ~−10.5. Catches leans before the line moves. ⚡ marks juice-driven edges.</li>
+        <li><b>Sharp consensus (median)</b> — compares to the middle of the sharp books. Most robust; ignores a single outlier.</li>
+        <li><b>Sharpest gap</b> — biggest gap to any one sharp book (most aggressive).</li>
+        <li><b>Beat every book</b> — strictest; only when your line beats the whole field.</li>
       </ul>
 
       <h3>Reading the board</h3>
-      <div class="help-legend-row"><span class="help-sw" style="background:rgba(45,122,69,0.3);border:1px solid var(--green)"></span> Green = Covers / pool line beats every book (your edge)</div>
-      <div class="help-legend-row"><span class="help-sw" style="background:rgba(30,80,160,0.12);border:2px solid #1a50a0"></span> Blue outline = best book (most points for the bettor)</div>
-      <div class="help-legend-row"><span class="help-sw" style="background:rgba(232,184,75,0.3);border:1px solid var(--gold)"></span> Gold = gap vs Covers exceeds your highlight threshold</div>
+      <div class="help-legend-row"><span class="help-sw" style="background:rgba(45,122,69,0.3);border:1px solid var(--green)"></span> Green = your pool/Covers line beats the sharp benchmark (your edge)</div>
+      <div class="help-legend-row"><span class="help-sw" style="background:rgba(30,80,160,0.12);border:2px solid #1a50a0"></span> Blue outline = best book to actually bet it (most points)</div>
+      <div class="help-legend-row"><span style="color:var(--accent);font-weight:700">⚡</span>&nbsp;Juice leaning — sharp vig says the number is about to move; grab it first</div>
+      <div class="help-legend-row"><span style="color:var(--accent);font-weight:700">📈</span>&nbsp;Steaming — sharp juice got heavier since your last refresh</div>
       <div class="help-legend-row"><span style="color:var(--green);font-weight:700">▼</span>&nbsp;better&nbsp;&nbsp;<span style="color:var(--red);font-weight:700">▲</span>&nbsp;worse — line moved since the last refresh</div>
+
+      <div class="help-note"><b>Protecting your credits:</b> one Fetch Lines ≈ 12 of your 500/month, so ~40 pulls a month. The <b>⚡ credits-left counter</b> under the key box shows what remains. Leave <b>↻ Auto-Refresh OFF</b> and Fetch by hand. Loading pool lines costs zero credits.</div>
+
+      <h3>First-time setup (once)</h3>
+      <ol>
+        <li>Get a free key at <a href="https://the-odds-api.com" target="_blank" rel="noopener">the-odds-api.com</a> — no credit card.</li>
+        <li>Paste it in the key box and click <b>⬇ Fetch Lines</b>. It's remembered on this device from then on.</li>
+        <li>No key yet? Click <b>Use Demo Data</b> for a full sample board.</li>
+      </ol>
 
       <button class="help-forget" onclick="forgetOddsKey()">Forget my saved key on this device</button>
     </div>
@@ -1291,6 +1309,7 @@ let threshold = 1.5;
 let prevLines = {}; // snapshot of previous spreads keyed by gameId+bookKey
 let viewMode = 'spread'; // 'spread' or 'juice'
 let lineHistory = {}; // gameId|bookKey → [{time, s}]
+let juiceHistory = {}; // gameId|bookKey → [{s, sj, sjOpp}] — for detecting juice "steaming" over refreshes
 
 // ═══════════════════════════════════════════════════
 //  EDGE ENGINE — the core of the tool
@@ -1300,6 +1319,7 @@ let lineHistory = {}; // gameId|bookKey → [{time, s}]
 //   'truevig' (default) — compare Covers vs each sharp book's VIG-ADJUSTED true line.
 //                         A -10 priced -160 really means ~-10.5; this catches the lean
 //                         BEFORE the half-point moves, which matters since Covers is slow.
+//   'consensus'         — compare Covers vs the MEDIAN sharp line (robust; ignores outliers).
 //   'sharpgap'          — biggest gap between Covers and any sharp book's displayed line.
 //   'beatall'           — stricter: Covers must beat EVERY book (incl. retail).
 const SHARP_KEYS = ['pinnacle', 'circa', 'novig', 'prophetx'];
@@ -1313,6 +1333,13 @@ function impliedProb(american) {
   const a = +american;
   if (!isFinite(a) || a === 0) return 0.5;
   return a < 0 ? (-a) / (-a + 100) : 100 / (a + 100);
+}
+
+function medianOf(arr) {
+  const s = arr.filter(v => v != null).slice().sort((a, b) => a - b);
+  if (!s.length) return null;
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 }
 
 // A book's vig-implied "true" line in home-team terms. Heavy favorite juice (e.g. home
@@ -1339,7 +1366,7 @@ function computeEdge(game) {
   const res = {
     hasCovers: covers !== null, coversSpread: covers,
     edge: 0, dispSign: 0, displayTeam: null, refSpread: null, vigLean: 0,
-    refLabel: edgeMode === 'truevig' ? 'vs sharp true' : edgeMode === 'sharpgap' ? 'vs sharp' : 'vs field',
+    refLabel: edgeMode === 'truevig' ? 'vs sharp true' : edgeMode === 'consensus' ? 'vs sharp med' : edgeMode === 'sharpgap' ? 'vs sharp' : 'vs field',
   };
 
   const sharpBooks = SHARP_KEYS.map(k => game.books[k]).filter(b => b && b.s != null);
@@ -1351,6 +1378,10 @@ function computeEdge(game) {
     comp = sharpBooks.map(b => trueLineHome(b.s, b.sj, b.sjOpp));
     compDisplayed = sharpBooks.map(b => b.s);
     if (!comp.length) { comp = allSpreads(); compDisplayed = comp.slice(); }
+  } else if (edgeMode === 'consensus') {
+    // Robust middle-of-the-sharp-market: single median reference (ignores any one outlier).
+    const med = medianOf(sharpBooks.length ? sharpBooks.map(b => b.s) : allSpreads());
+    comp = med != null ? [med] : [];
   } else { // sharpgap
     comp = sharpBooks.map(b => b.s);
     if (!comp.length) comp = allSpreads();
@@ -2420,8 +2451,43 @@ function recordHistory() {
         hist.push({ time: now, s: line.s });
         if (hist.length > 10) hist.shift();
       }
+      // Track juice for sharp books so we can spot it "steaming" (getting heavier) over refreshes.
+      if (SHARP_KEYS.includes(bk) && line.s != null) {
+        const jkey = id + '|' + bk;
+        if (!juiceHistory[jkey]) juiceHistory[jkey] = [];
+        const jh = juiceHistory[jkey];
+        const last = jh[jh.length - 1];
+        if (!last || last.s !== line.s || last.sj !== line.sj || last.sjOpp !== (line.sjOpp ?? null)) {
+          jh.push({ s: line.s, sj: line.sj ?? null, sjOpp: line.sjOpp ?? null });
+          if (jh.length > 8) jh.shift();
+        }
+      }
     });
   });
+}
+
+// Is the sharp market's juice STEAMING toward the pick? i.e. at the same displayed line,
+// has the price on the pick side gotten heavier (more negative) across recent refreshes?
+// Returns the max cents of heaviness across sharp books (0 = not steaming).
+function sharpSteaming(game, dispSign) {
+  const id = game.id || (game.away + '@' + game.home);
+  let best = 0;
+  SHARP_KEYS.forEach(bk => {
+    const line = game.books[bk];
+    if (!line || line.s == null) return;
+    const jh = juiceHistory[id + '|' + bk];
+    if (!jh || jh.length < 2) return;
+    // Only the tail where the displayed line matches the current line (a spread move is a
+    // different, already-arrowed event). Pick-side price: home pick uses sj, away uses sjOpp.
+    const tail = [];
+    for (let i = jh.length - 1; i >= 0 && jh[i].s === line.s; i--) tail.unshift(jh[i]);
+    if (tail.length < 2) return;
+    const sidePrice = e => (dispSign === 1 ? e.sj : e.sjOpp);
+    const first = sidePrice(tail[0]), last = sidePrice(tail[tail.length - 1]);
+    if (first == null || last == null) return;
+    best = Math.max(best, first - last); // >0 when the current price is more negative (heavier)
+  });
+  return best;
 }
 
 
@@ -2450,10 +2516,12 @@ const BOOK_KEY_MAP = {
   'betus':            'betonline',
   'mybookieag':       'bookmaker',
   'superbook':        'bookmaker',
-  'unibet_us':        null,         // excluded
-  'betmgm':           null,         // excluded
-  'betrivers':        null,         // excluded
-  'espnbet':          null,         // excluded
+  // Deliberately excluded — these books are notoriously SLOW and not as sharp as the
+  // others, so they'd add noise to the true-line/consensus math. Do NOT re-add.
+  'unibet_us':        null,         // excluded (slow / soft)
+  'betmgm':           null,         // excluded (slow / soft)
+  'betrivers':        null,         // excluded (slow / soft)
+  'espnbet':          null,         // excluded (slow / soft)
 };
 
 function parseApiResponse(data, coversLines = {}) {
@@ -2580,31 +2648,25 @@ function parseApiResponse(data, coversLines = {}) {
 //  RENDER
 // ═══════════════════════════════════════════════════
 function loadDemo() {
-  const fresh = buildDemo();
-  // Simulate line movement in demo mode: randomly nudge a few spreads by 0.5
   if (allGames.length) {
-    fresh.forEach(g => {
-      Object.keys(g.books).forEach(bk => {
-        if (Math.random() < 0.15) { // 15% chance per book to move
-          g.books[bk].s += Math.random() < 0.5 ? 0.5 : -0.5;
+    // Refresh: MUTATE the existing demo board in place so line moves and juice "steaming"
+    // accrue across refreshes (rebuilding from scratch would reset the history every time).
+    allGames.forEach(g => {
+      Object.entries(g.books).forEach(([bk, b]) => {
+        if (bk === 'covers') return; // pool/Covers line is the slow reference — leave it put
+        if (Math.random() < 0.12) b.s += Math.random() < 0.5 ? 0.5 : -0.5; // occasional spread move
+        // Sharp books: sometimes steam — juice gets heavier on the same line (imminent move).
+        if (SHARP_KEYS.includes(bk) && b.sj != null && Math.random() < 0.35) {
+          const bump = 10 + Math.round(Math.random() * 14);
+          b.sj = Math.max(-190, b.sj - bump);
+          if (b.sjOpp != null) b.sjOpp = Math.min(170, b.sjOpp + bump);
         }
       });
-      // re-enrich after nudge — use same edge logic as renderTable
-      const coversS = g.books.covers?.s ?? null;
-      let maxD = 0;
-      if (coversS !== null) {
-        const mktS = BOOKS_ORDER.filter(b => b.key !== 'covers' && g.books[b.key]).map(b => g.books[b.key].s ?? null).filter(v => v != null);
-        if (mktS.length) {
-          const bh = Math.max(...mktS), ba = Math.min(...mktS);
-          const sh = coversS === 0 || bh === 0 || Math.sign(coversS) === Math.sign(bh);
-          const sa = coversS === 0 || ba === 0 || Math.sign(coversS) === Math.sign(ba);
-          maxD = Math.max(sh ? coversS - bh : 0, sa ? ba - coversS : 0, 0);
-        }
-      }
-      g.maxDeltaVsCovers = maxD;
+      g.maxSpreadVar = enrichGame(g).maxSpreadVar;
     });
+  } else {
+    allGames = buildDemo();
   }
-  allGames = fresh;
   recordHistory();
   enableRefreshNow();
   renderTable();
@@ -2676,6 +2738,7 @@ function renderTable() {
   games.forEach((game, gi) => {
     const E = game._edge || computeEdge(game);
     const dispSign = E.dispSign, displayTeam = E.displayTeam, coversEdge = E.edge;
+    const steam = sharpSteaming(game, dispSign);
 
     const varClass = coversEdge >= threshold ? 'var-high' :
                      coversEdge >= threshold/2 ? 'var-mid' : 'var-low';
@@ -2722,7 +2785,7 @@ function renderTable() {
             </div>
             <div>
               <div class="matchup">${abbrev(game.away)}<br><span style="opacity:.4;font-size:.7em">@</span> ${abbrev(game.home)}</div>
-              <span style="font-size:0.58rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--green);font-weight:700;font-family:'Syne',sans-serif;">${coversEdge >= 0.5 ? '★ PICK' : 'LINE'}: ${abbrev(displayTeam)}${coversEdge >= 0.5 ? ` +${coversEdge.toFixed(1)} <span style="opacity:.7;font-weight:400">${E.refLabel}</span>` : ''}</span>${E.vigLean >= 0.3 ? `<br><span style="font-size:0.54rem;letter-spacing:0.06em;text-transform:uppercase;color:var(--accent);font-weight:700;font-family:'IBM Plex Mono',monospace;" title="Sharp vig implies the number is about to move — grab Covers first">⚡ juice leaning +${E.vigLean.toFixed(1)}</span>` : ''}
+              <span style="font-size:0.58rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--green);font-weight:700;font-family:'Syne',sans-serif;">${coversEdge >= 0.5 ? '★ PICK' : 'LINE'}: ${abbrev(displayTeam)}${coversEdge >= 0.5 ? ` +${coversEdge.toFixed(1)} <span style="opacity:.7;font-weight:400">${E.refLabel}</span>` : ''}</span>${E.vigLean >= 0.3 ? `<br><span style="font-size:0.54rem;letter-spacing:0.06em;text-transform:uppercase;color:var(--accent);font-weight:700;font-family:'IBM Plex Mono',monospace;" title="Sharp vig implies the number is about to move — grab Covers first">⚡ juice leaning +${E.vigLean.toFixed(1)}</span>` : ''}${steam >= 15 ? `<br><span style="font-size:0.54rem;letter-spacing:0.06em;text-transform:uppercase;color:var(--accent);font-weight:700;font-family:'IBM Plex Mono',monospace;" title="Sharp juice got heavier since your last refresh — the line is steaming">📈 steaming</span>` : ''}
             </div>
           </div>
           <span class="game-time-tag">${timeStr}</span>
@@ -2944,10 +3007,11 @@ function renderTopPicks(games) {
     const flag = e.edge >= threshold;
     const bb = bestBookForPick(g, e.dispSign);
     const bookNm = bb ? (BOOK_BRAND[bb.key]?.full || bb.label) : null;
+    const steam = sharpSteaming(g, e.dispSign);
     return `<div class="tp-row">
       <div class="tp-rank">${i + 1}</div>
       <div>
-        <div class="tp-pick">${abbrev(e.displayTeam)} ${sign(pickLine)}${e.vigLean >= 0.3 ? ' <span style="color:var(--accent);font-size:0.62rem" title="Sharp juice implies the line is about to move">⚡</span>' : ''}
+        <div class="tp-pick">${abbrev(e.displayTeam)} ${sign(pickLine)}${e.vigLean >= 0.3 ? ' <span style="color:var(--accent);font-size:0.62rem" title="Sharp juice implies the line is about to move">⚡</span>' : ''}${steam >= 15 ? ' <span style="color:var(--accent);font-size:0.62rem" title="Sharp juice got heavier since your last refresh">📈</span>' : ''}
           <span class="tp-vs">${abbrev(g.away)} @ ${abbrev(g.home)} · <span class="tp-time">${when} ET</span>${bb ? ` · best: <b style="color:var(--ink)">${bookNm} ${sign(bb.s * e.dispSign)}</b> (${bb.sj > 0 ? '+' : ''}${bb.sj})` : ''}</span>
         </div>
       </div>
