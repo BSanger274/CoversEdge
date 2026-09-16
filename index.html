@@ -1062,6 +1062,7 @@ body.dark .covers-edge-text { color: #ffffff !important; }
       Edge vs:
       <select id="edge-mode" onchange="setEdgeMode(this.value)"
         style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;background:var(--paper);color:var(--ink);border:1px solid var(--line);padding:4px 8px;letter-spacing:0.06em;cursor:pointer;outline:none;accent-color:var(--accent);">
+        <option value="truevig">Sharp true line (vig-adj)</option>
         <option value="sharpgap">Sharpest gap</option>
         <option value="beatall">Beat every book</option>
       </select>
@@ -1124,6 +1125,7 @@ body.dark .covers-edge-text { color: #ffffff !important; }
   </div>
   <div class="legend-item"><div class="swatch" style="background:rgba(30,80,160,0.12);border:2px solid #1a50a0;"></div><span>Best book (most points for bettor)</span></div>
   <div class="legend-item"><div class="swatch sw-flag"></div><span>Gap vs Covers exceeds threshold</span></div>
+  <div class="legend-item"><span style="color:var(--accent);font-weight:700">⚡</span>&nbsp;<span>Juice leaning — sharp vig implies the line is about to move (grab Covers first)</span></div>
   <div class="legend-item"><span style="color:#2d7a45;font-weight:700;font-size:0.8rem">▼</span>&nbsp;<span>Line moved down (better)</span>&nbsp;&nbsp;<span style="color:#c0392b;font-weight:700;font-size:0.8rem">▲</span>&nbsp;<span>Line moved up (worse) since last refresh</span></div>
   <div class="legend-item" style="margin-left:auto">Spread mode: favorite's line shown · Juice mode: cost to bet the Covers line at each book</div>
 </div>
@@ -1294,29 +1296,64 @@ let lineHistory = {}; // gameId|bookKey → [{time, s}]
 //  EDGE ENGINE — the core of the tool
 // ═══════════════════════════════════════════════════
 // The recommended pick is the side where the Covers/pool line is most GENEROUS
-// relative to the sharp market. Two benchmark modes the user can switch between:
-//   'sharpgap' (default) — biggest gap between Covers and ANY single sharp book.
-//                          Every game gets a value, so the whole slate ranks cleanly.
-//   'beatall'            — stricter: Covers must beat EVERY book (incl. retail).
+// relative to the sharp market. Three benchmark modes the user can switch between:
+//   'truevig' (default) — compare Covers vs each sharp book's VIG-ADJUSTED true line.
+//                         A -10 priced -160 really means ~-10.5; this catches the lean
+//                         BEFORE the half-point moves, which matters since Covers is slow.
+//   'sharpgap'          — biggest gap between Covers and any sharp book's displayed line.
+//   'beatall'           — stricter: Covers must beat EVERY book (incl. retail).
 const SHARP_KEYS = ['pinnacle', 'circa', 'novig', 'prophetx'];
-let edgeMode = 'sharpgap';
+let edgeMode = 'truevig';
 
-// Returns { hasCovers, coversSpread, edge, dispSign, displayTeam, refSpread, refLabel }
+// Cents-per-point calibration: how strongly juice pulls the true line off the number.
+// Seeded so a -160 favorite (~+0.9 no-vig prob edge) lands ~0.5 pt past the line.
+const VIG_K = 5.0;
+
+function impliedProb(american) {
+  const a = +american;
+  if (!isFinite(a) || a === 0) return 0.5;
+  return a < 0 ? (-a) / (-a + 100) : 100 / (a + 100);
+}
+
+// A book's vig-implied "true" line in home-team terms. Heavy favorite juice (e.g. home
+// -10 at -160) pushes the true line past -10 toward -10.5; cheap/plus juice pulls it back.
+function trueLineHome(s, sj, sjOpp) {
+  if (s == null) return null;
+  let pHome;
+  if (sjOpp != null) {
+    const ih = impliedProb(sj), ia = impliedProb(sjOpp);
+    pHome = ih / (ih + ia); // no-vig probability the home side covers the displayed line
+  } else {
+    // Only one side's price available (e.g. demo): strip ~half a standard hold.
+    pHome = Math.min(0.9, Math.max(0.1, impliedProb(sj ?? -110) - 0.022));
+  }
+  return +(s - (pHome - 0.5) * VIG_K).toFixed(2);
+}
+
+// Returns { hasCovers, coversSpread, edge, dispSign, displayTeam, refSpread, refLabel, vigLean }
 // edge     = points of value on the recommended side (>= 0)
 // dispSign = +1 → home is the pick/shown side, -1 → away
+// vigLean  = (truevig mode) points of the edge that come from juice rather than the raw number
 function computeEdge(game) {
   const covers = game.books.covers?.s ?? null;
   const res = {
     hasCovers: covers !== null, coversSpread: covers,
-    edge: 0, dispSign: 0, displayTeam: null, refSpread: null,
-    refLabel: edgeMode === 'sharpgap' ? 'vs sharp' : 'vs field',
+    edge: 0, dispSign: 0, displayTeam: null, refSpread: null, vigLean: 0,
+    refLabel: edgeMode === 'truevig' ? 'vs sharp true' : edgeMode === 'sharpgap' ? 'vs sharp' : 'vs field',
   };
-  const sharp = edgeMode === 'sharpgap';
-  let comp = (sharp ? SHARP_KEYS : BOOKS_ORDER.filter(b => b.key !== 'covers').map(b => b.key))
-    .map(k => game.books[k]?.s).filter(v => v != null);
-  // In sharp mode with no sharp book on the board, fall back to all books so the game still ranks.
-  if (!comp.length && sharp) {
-    comp = BOOKS_ORDER.filter(b => b.key !== 'covers').map(b => game.books[b.key]?.s).filter(v => v != null);
+
+  const sharpBooks = SHARP_KEYS.map(k => game.books[k]).filter(b => b && b.s != null);
+  const allSpreads = () => BOOKS_ORDER.filter(b => b.key !== 'covers').map(b => game.books[b.key]?.s).filter(v => v != null);
+  let comp, compDisplayed = null;
+  if (edgeMode === 'beatall') {
+    comp = allSpreads();
+  } else if (edgeMode === 'truevig') {
+    comp = sharpBooks.map(b => trueLineHome(b.s, b.sj, b.sjOpp));
+    compDisplayed = sharpBooks.map(b => b.s);
+    if (!comp.length) { comp = allSpreads(); compDisplayed = comp.slice(); }
+  } else { // sharpgap
+    comp = sharpBooks.map(b => b.s);
+    if (!comp.length) comp = allSpreads();
   }
 
   if (covers === null || !comp.length) {
@@ -1327,25 +1364,35 @@ function computeEdge(game) {
     return res;
   }
 
-  // Benchmark spread on each side. sharpgap looks at the sharp book that most favors
-  // that side (the biggest gap); beatall requires beating the best of the whole field.
-  const homeRef = sharp ? Math.min(...comp) : Math.max(...comp);
-  const awayRef = sharp ? Math.max(...comp) : Math.min(...comp);
-  const sameHome = covers === 0 || homeRef === 0 || Math.sign(covers) === Math.sign(homeRef);
-  const sameAway = covers === 0 || awayRef === 0 || Math.sign(covers) === Math.sign(awayRef);
-  const edgeHome = sameHome ? covers - homeRef : 0; // + when Covers gives home more points than the benchmark
-  const edgeAway = sameAway ? awayRef - covers : 0; // + when Covers gives away more points
+  const beat = edgeMode === 'beatall';
+  // beatall: must beat the best of the field (max/min). sharpgap/truevig: biggest gap to
+  // the sharp book that most favors each side (min for home value, max for away value).
+  const sideEdges = (set) => {
+    const homeRef = beat ? Math.max(...set) : Math.min(...set);
+    const awayRef = beat ? Math.min(...set) : Math.max(...set);
+    const sH = covers === 0 || homeRef === 0 || Math.sign(covers) === Math.sign(homeRef);
+    const sA = covers === 0 || awayRef === 0 || Math.sign(covers) === Math.sign(awayRef);
+    return { eHome: sH ? covers - homeRef : 0, eAway: sA ? awayRef - covers : 0, homeRef, awayRef };
+  };
+  const p = sideEdges(comp);
 
-  if (edgeAway > edgeHome && edgeAway >= 0.5) {
-    res.dispSign = -1; res.displayTeam = game.away; res.edge = edgeAway; res.refSpread = awayRef;
-  } else if (edgeHome >= 0.5) {
-    res.dispSign = 1; res.displayTeam = game.home; res.edge = edgeHome; res.refSpread = homeRef;
+  if (p.eAway > p.eHome && p.eAway >= 0.5) {
+    res.dispSign = -1; res.displayTeam = game.away; res.edge = p.eAway; res.refSpread = p.awayRef;
+  } else if (p.eHome >= 0.5) {
+    res.dispSign = 1; res.displayTeam = game.home; res.edge = p.eHome; res.refSpread = p.homeRef;
   } else {
     const homeIsFav = covers < 0;
     res.dispSign = homeIsFav ? 1 : -1;
     res.displayTeam = homeIsFav ? game.home : game.away;
-    res.edge = Math.max(edgeHome, edgeAway, 0);
-    res.refSpread = res.dispSign === 1 ? homeRef : awayRef;
+    res.edge = Math.max(p.eHome, p.eAway, 0);
+    res.refSpread = res.dispSign === 1 ? p.homeRef : p.awayRef;
+  }
+
+  // How much of the edge is coming from the vig lean vs the raw displayed number?
+  if (edgeMode === 'truevig' && compDisplayed && compDisplayed.length) {
+    const pd = sideEdges(compDisplayed);
+    const rawEdge = res.dispSign === -1 ? pd.eAway : pd.eHome;
+    res.vigLean = Math.max(0, +(res.edge - rawEdge).toFixed(2));
   }
   return res;
 }
@@ -1364,8 +1411,10 @@ function buildDemo() {
     { away:'Michigan State Spartans', home:'Indiana Hoosiers',     time:'2026-03-03T20:45:00Z',
       books:{ covers:{s:-2.5,sj:-110,t:142.5,tj:-110,ml:-138}, pinnacle:{s:-3,sj:-107,t:142.5,tj:-107,ml:-148}, novig:{s:-3,sj:-104,t:143,tj:-104,ml:-150}, prophetx:{s:-3,sj:-106,t:142.5,tj:-105,ml:-145}, fanduel:{s:-3,sj:-115,t:142.5,tj:-115,ml:-140}, circa:{s:-3,sj:-108,t:143,tj:-108,ml:-152}, draftkings:{s:-3,sj:-110,t:142.5,tj:-110,ml:-145}, caesars:{s:-3,sj:-110,t:142.5,tj:-110,ml:-142}, bookmaker:{s:-3,sj:-105,t:143,tj:-105,ml:-150}, betonline:{s:-3,sj:-110,t:142.5,tj:-110,ml:-145} } },
     // Big Ten: Rutgers @ Maryland — 12:00pm ET
+    // Vig-lean showcase: every sharp book shows Maryland -5 (same as Covers) BUT juiced to
+    // ~-155/-160 — their true line is ~-5.5. Sharpest-gap sees no edge; true-line catches +0.4.
     { away:'Rutgers Scarlet Knights', home:'Maryland Terrapins',   time:'2026-03-03T17:00:00Z',
-      books:{ covers:{s:-5,sj:-110,t:134,tj:-110,ml:-210}, pinnacle:{s:-5,sj:-107,t:134,tj:-107,ml:-215}, novig:{s:-5,sj:-104,t:134.5,tj:-104,ml:-220}, prophetx:{s:-5,sj:-106,t:134,tj:-105,ml:-215}, fanduel:{s:-5,sj:-115,t:134,tj:-115,ml:-205}, circa:{s:-5.5,sj:-108,t:134.5,tj:-108,ml:-225}, draftkings:{s:-5,sj:-110,t:134,tj:-110,ml:-210}, caesars:{s:-5,sj:-110,t:134,tj:-110,ml:-208}, bookmaker:{s:-5.5,sj:-105,t:134.5,tj:-105,ml:-222}, betonline:{s:-5,sj:-110,t:134,tj:-110,ml:-212} } },
+      books:{ covers:{s:-5,sj:-110,t:134,tj:-110,ml:-210}, pinnacle:{s:-5,sj:-172,sjOpp:+146,t:134,tj:-107,ml:-215}, novig:{s:-5,sj:-176,sjOpp:+150,t:134.5,tj:-104,ml:-220}, prophetx:{s:-5,sj:-168,sjOpp:+142,t:134,tj:-105,ml:-215}, fanduel:{s:-5,sj:-115,t:134,tj:-115,ml:-205}, circa:{s:-5,sj:-170,sjOpp:+144,t:134.5,tj:-108,ml:-225}, draftkings:{s:-5,sj:-110,t:134,tj:-110,ml:-210}, caesars:{s:-5,sj:-110,t:134,tj:-110,ml:-208}, bookmaker:{s:-5.5,sj:-105,t:134.5,tj:-105,ml:-222}, betonline:{s:-5,sj:-110,t:134,tj:-110,ml:-212} } },
     // Big Ten: Iowa @ Wisconsin — 3:00pm ET
     { away:'Iowa Hawkeyes', home:'Wisconsin Badgers',              time:'2026-03-03T20:00:00Z',
       books:{ covers:{s:-3,sj:-110,t:130.5,tj:-110,ml:-152}, pinnacle:{s:-3.5,sj:-107,t:130.5,tj:-107,ml:-162}, novig:{s:-3.5,sj:-104,t:131,tj:-104,ml:-165}, prophetx:{s:-3.5,sj:-106,t:130.5,tj:-105,ml:-160}, fanduel:{s:-3.5,sj:-115,t:130.5,tj:-115,ml:-152}, circa:{s:-3.5,sj:-108,t:131,tj:-108,ml:-168}, draftkings:{s:-3.5,sj:-110,t:130.5,tj:-110,ml:-158}, caesars:{s:-3.5,sj:-110,t:130.5,tj:-110,ml:-155}, bookmaker:{s:-3.5,sj:-105,t:131,tj:-105,ml:-165}, betonline:{s:-3.5,sj:-110,t:130.5,tj:-110,ml:-160} } },
@@ -2421,6 +2470,7 @@ function parseApiResponse(data, coversLines = {}) {
       const mlMkt        = bk.markets?.find(m => m.key === 'h2h');
 
       const homeSpread = spreadMkt?.outcomes?.find(o => o.name === event.home_team);
+      const awaySpread = spreadMkt?.outcomes?.find(o => o.name === event.away_team);
       const overTotal  = totalMkt?.outcomes?.find(o => o.name === 'Over');
       const homeML     = mlMkt?.outcomes?.find(o => o.name === event.home_team);
 
@@ -2463,6 +2513,7 @@ function parseApiResponse(data, coversLines = {}) {
         books[mapped] = {
           s:       homeSpread.point,
           sj:      homeSpread.price ?? -110,
+          sjOpp:   awaySpread?.price ?? null, // away-side price at the primary line, for no-vig true line
           t:       overTotal?.point ?? 0,
           tj:      overTotal?.price ?? -110,
           ml:      homeML?.price ?? 0,
@@ -2671,7 +2722,7 @@ function renderTable() {
             </div>
             <div>
               <div class="matchup">${abbrev(game.away)}<br><span style="opacity:.4;font-size:.7em">@</span> ${abbrev(game.home)}</div>
-              <span style="font-size:0.58rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--green);font-weight:700;font-family:'Syne',sans-serif;">${coversEdge >= 0.5 ? '★ PICK' : 'LINE'}: ${abbrev(displayTeam)}${coversEdge >= 0.5 ? ` +${coversEdge.toFixed(1)} <span style="opacity:.7;font-weight:400">${E.refLabel}</span>` : ''}</span>
+              <span style="font-size:0.58rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--green);font-weight:700;font-family:'Syne',sans-serif;">${coversEdge >= 0.5 ? '★ PICK' : 'LINE'}: ${abbrev(displayTeam)}${coversEdge >= 0.5 ? ` +${coversEdge.toFixed(1)} <span style="opacity:.7;font-weight:400">${E.refLabel}</span>` : ''}</span>${E.vigLean >= 0.3 ? `<br><span style="font-size:0.54rem;letter-spacing:0.06em;text-transform:uppercase;color:var(--accent);font-weight:700;font-family:'IBM Plex Mono',monospace;" title="Sharp vig implies the number is about to move — grab Covers first">⚡ juice leaning +${E.vigLean.toFixed(1)}</span>` : ''}
             </div>
           </div>
           <span class="game-time-tag">${timeStr}</span>
@@ -2850,8 +2901,24 @@ function renderTable() {
 
 }
 
+// Best sportsbook to actually PLACE the bet on the pick side: the book offering the
+// most points (ties broken by cheapest juice). This is the OddsJam "bet it where it
+// supports your bet most" step.
+function bestBookForPick(game, dispSign) {
+  let best = null;
+  BOOKS_ORDER.filter(b => b.key !== 'covers').forEach(b => {
+    const ln = game.books[b.key];
+    if (!ln || ln.s == null) return;
+    const disp = ln.s * dispSign;
+    if (!best || disp > best.disp || (disp === best.disp && (ln.sj ?? -110) > best.sj)) {
+      best = { key: b.key, label: b.label, disp, s: ln.s, sj: ln.sj ?? -110 };
+    }
+  });
+  return best;
+}
+
 // ── TOP PICKS THIS WEEK ──
-// The 25 biggest edges across the visible slate — your weekly ballot.
+// The 25 biggest edges across the visible slate — your weekly ballot / bet slip.
 function renderTopPicks(games) {
   const bar = document.getElementById('toppicks-bar');
   const content = document.getElementById('toppicks-content');
@@ -2875,11 +2942,13 @@ function renderTopPicks(games) {
     const pickLine = (e.coversSpread * e.dispSign);
     const refLine  = e.refSpread != null ? (e.refSpread * e.dispSign) : null;
     const flag = e.edge >= threshold;
+    const bb = bestBookForPick(g, e.dispSign);
+    const bookNm = bb ? (BOOK_BRAND[bb.key]?.full || bb.label) : null;
     return `<div class="tp-row">
       <div class="tp-rank">${i + 1}</div>
       <div>
-        <div class="tp-pick">${abbrev(e.displayTeam)} ${sign(pickLine)}
-          <span class="tp-vs">${abbrev(g.away)} @ ${abbrev(g.home)} · <span class="tp-time">${when} ET</span></span>
+        <div class="tp-pick">${abbrev(e.displayTeam)} ${sign(pickLine)}${e.vigLean >= 0.3 ? ' <span style="color:var(--accent);font-size:0.62rem" title="Sharp juice implies the line is about to move">⚡</span>' : ''}
+          <span class="tp-vs">${abbrev(g.away)} @ ${abbrev(g.home)} · <span class="tp-time">${when} ET</span>${bb ? ` · best: <b style="color:var(--ink)">${bookNm} ${sign(bb.s * e.dispSign)}</b> (${bb.sj > 0 ? '+' : ''}${bb.sj})` : ''}</span>
         </div>
       </div>
       <div class="tp-line">Covers <b>${sign(pickLine)}</b>${refLine != null ? `<br>${e.refLabel} <b>${sign(refLine)}</b>` : ''}</div>
