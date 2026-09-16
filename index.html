@@ -926,6 +926,35 @@ body.dark .covers-edge-text { color: #ffffff !important; }
   color: var(--green); text-align: right; white-space: nowrap; min-width: 52px;
 }
 .tp-time { font-size: 0.56rem; color: var(--soft); letter-spacing: 0.05em; text-transform: uppercase; }
+
+/* ── MY RECORD ── */
+.rec-top { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+.rec-stat { flex: 1; min-width: 130px; border: 1px solid var(--line); border-radius: 5px; padding: 8px 10px; background: var(--paper); }
+.rec-num { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.0rem; color: var(--ink); letter-spacing: -0.01em; }
+.rec-cap { font-size: 0.54rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--soft); margin-top: 3px; }
+.rec-title { font-family: 'Syne', sans-serif; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--soft); margin: 6px 0 8px; }
+.rec-row { display: grid; grid-template-columns: 120px 1fr 90px; align-items: center; gap: 10px; padding: 4px 2px; font-size: 0.7rem; }
+.rec-lbl { color: var(--ink); font-weight: 600; }
+.rec-rec { font-family: 'IBM Plex Mono', monospace; color: var(--soft); text-align: right; white-space: nowrap; }
+.rec-meter { height: 7px; background: var(--line); border-radius: 4px; overflow: hidden; }
+.rec-meter > span { display: block; height: 100%; }
+
+/* ── TEAM POPUP ROWS ── */
+.tm-section-title { font-family: 'Syne', sans-serif; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+.tm-empty { font-size: 0.68rem; color: var(--soft); padding: 6px 2px; }
+.tm-row { display: grid; grid-template-columns: 52px 1fr auto; align-items: center; gap: 10px; padding: 7px 4px; border-bottom: 1px solid var(--line); font-size: 0.72rem; }
+.tm-row:last-child { border-bottom: none; }
+.tm-when { font-size: 0.6rem; color: var(--soft); letter-spacing: 0.04em; text-transform: uppercase; }
+.tm-game b { font-family: 'Syne', sans-serif; font-weight: 700; }
+.tm-sub { font-size: 0.58rem; color: var(--soft); }
+.tm-res { text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem; white-space: nowrap; }
+.tm-pending { color: var(--soft); font-style: italic; }
+.tm-cover { font-size: 0.56rem; font-weight: 700; letter-spacing: 0.04em; padding: 1px 5px; border-radius: 2px; }
+.tm-win { background: rgba(45,122,69,0.18); color: var(--green); }
+.tm-loss { background: rgba(192,57,43,0.14); color: var(--red); }
+.tm-push { background: rgba(10,14,20,0.08); color: var(--soft); }
+.team-clickable { cursor: pointer; }
+.team-clickable:hover { text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 2px; }
 </style>
 </head>
 <body>
@@ -1108,6 +1137,20 @@ body.dark .covers-edge-text { color: #ffffff !important; }
   <span class="last-fetch" id="last-fetch-time">Not yet fetched</span>
 </div>
 
+<!-- MY RECORD -->
+<div id="record-bar" style="display:none;border:2px solid var(--ink);margin-bottom:14px;background:var(--cream);">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 16px;gap:12px;background:var(--ink);color:var(--paper);">
+    <span style="display:flex;align-items:center;gap:10px;cursor:pointer;font-family:'Syne',sans-serif;font-weight:800;font-size:0.78rem;letter-spacing:0.12em;text-transform:uppercase;" onclick="toggleRecord()">
+      📊 My Record <span id="record-count" style="opacity:0.7;font-weight:400;"></span>
+    </span>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button id="grade-btn" onclick="gradeResults()" style="padding:5px 12px;background:var(--flag);color:var(--ink);font-family:'Syne',sans-serif;font-weight:700;font-size:0.62rem;letter-spacing:0.08em;text-transform:uppercase;border:none;cursor:pointer;">↻ Grade results</button>
+      <span id="record-arrow" style="font-size:0.7rem;cursor:pointer;" onclick="toggleRecord()">▲</span>
+    </div>
+  </div>
+  <div id="record-body" style="padding:12px 14px;"><div id="record-content"></div></div>
+</div>
+
 <!-- TOP PICKS -->
 <div id="toppicks-bar" style="display:none;border:2px solid var(--ink);margin-bottom:18px;background:var(--cream);">
   <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 16px;gap:12px;cursor:pointer;background:var(--ink);color:var(--paper);" onclick="toggleTopPicks()">
@@ -1150,6 +1193,17 @@ body.dark .covers-edge-text { color: #ffffff !important; }
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- TEAM POPUP -->
+<div class="help-overlay" id="team-overlay" onclick="if(event.target===this)closeTeamPopup()">
+  <div class="help-modal">
+    <div class="help-modal-head">
+      <h2 id="team-modal-title">Team</h2>
+      <button class="help-close" onclick="closeTeamPopup()" aria-label="Close">✕</button>
+    </div>
+    <div class="help-body" id="team-modal-body"></div>
+  </div>
+</div>
 
 <!-- HELP MODAL -->
 <div class="help-overlay" id="help-overlay" onclick="if(event.target===this)toggleHelp()">
@@ -1195,7 +1249,14 @@ body.dark .covers-edge-text { color: #ffffff !important; }
       <div class="help-legend-row"><span style="color:var(--accent);font-weight:700">📈</span>&nbsp;Steaming — sharp juice got heavier since your last refresh</div>
       <div class="help-legend-row"><span style="color:var(--green);font-weight:700">▼</span>&nbsp;better&nbsp;&nbsp;<span style="color:var(--red);font-weight:700">▲</span>&nbsp;worse — line moved since the last refresh</div>
 
-      <div class="help-note"><b>Protecting your credits:</b> one Fetch Lines ≈ 12 of your 500/month, so ~40 pulls a month. The <b>⚡ credits-left counter</b> under the key box shows what remains. Leave <b>↻ Auto-Refresh OFF</b> and Fetch by hand. Loading pool lines costs zero credits.</div>
+      <h3>Tracking your results</h3>
+      <ul>
+        <li>Every Fetch Lines <b>saves your recommended pick</b> for each game. After games finish, open <b>📊 My Record</b> and click <b>↻ Grade results</b> — it pulls final scores and marks each pick ✓/✗ against your pool line.</li>
+        <li>You get your <b>season & weekly ATS record</b> plus <b>hit-rate by edge size</b> — so you learn which signals actually win and can tune the vig slider to what's worked.</li>
+        <li><b>Click any team name</b> to see its games: your picks (result + covered), home/away, and recent form.</li>
+      </ul>
+
+      <div class="help-note"><b>Protecting your credits:</b> one Fetch Lines ≈ 12 of your 500/month, so ~40 pulls a month (grading adds ~2 each time). The <b>⚡ credits-left counter</b> under the key box shows what remains. Leave <b>↻ Auto-Refresh OFF</b> and Fetch by hand. Loading pool lines costs zero credits.</div>
 
       <h3>First-time setup (once)</h3>
       <ol>
@@ -1787,6 +1848,7 @@ async function fetchLiveData() {
         ' · ' + new Date().toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit', second:'2-digit', hour12:true });
     }
     cacheBoard();
+    snapshotPicks();
     startAutoRefresh();
   } catch(e) {
     console.error('[CoversEdge] fetchLiveData error:', e);
@@ -2739,6 +2801,7 @@ function loadDemo() {
   recordHistory();
   enableRefreshNow();
   renderTable();
+  // NOTE: demo picks are intentionally NOT tracked — only real live fetches feed My Record.
   document.getElementById('last-fetch-time').textContent = 'Demo · Simulated refresh ' + new Date().toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit', second:'2-digit', hour12:true });
 }
 
@@ -2853,7 +2916,7 @@ function renderTable() {
               ${getTeamBadge(game.home)}
             </div>
             <div>
-              <div class="matchup">${abbrev(game.away)}<br><span style="opacity:.4;font-size:.7em">@</span> ${abbrev(game.home)}</div>
+              <div class="matchup"><span class="team-clickable" onclick="event.stopPropagation();openTeamPopup('${jsq(game.away)}')">${abbrev(game.away)}</span><br><span style="opacity:.4;font-size:.7em">@</span> <span class="team-clickable" onclick="event.stopPropagation();openTeamPopup('${jsq(game.home)}')">${abbrev(game.home)}</span></div>
               <span style="font-size:0.58rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--green);font-weight:700;font-family:'Syne',sans-serif;">${coversEdge >= 0.5 ? '★ PICK' : 'LINE'}: ${abbrev(displayTeam)}${coversEdge >= 0.5 ? ` +${coversEdge.toFixed(1)} <span style="opacity:.7;font-weight:400">${E.refLabel}</span>` : ''}</span>${E.vigLean >= 0.3 ? `<br><span style="font-size:0.54rem;letter-spacing:0.06em;text-transform:uppercase;color:var(--accent);font-weight:700;font-family:'IBM Plex Mono',monospace;" title="Sharp vig implies the number is about to move — grab Covers first">⚡ juice leaning +${E.vigLean.toFixed(1)}</span>` : ''}${steam >= 15 ? `<br><span style="font-size:0.54rem;letter-spacing:0.06em;text-transform:uppercase;color:var(--accent);font-weight:700;font-family:'IBM Plex Mono',monospace;" title="Sharp juice got heavier since your last refresh — the line is steaming">📈 steaming</span>` : ''}
             </div>
           </div>
@@ -3124,6 +3187,259 @@ function syncVigK() {
   if (slider) slider.value = VIG_K;
   if (wrap) wrap.style.display = (edgeMode === 'truevig') ? '' : 'none';
   updateVigHint();
+}
+
+// ═══════════════════════════════════════════════════
+//  RESULTS TRACKING — did the pick win?
+// ═══════════════════════════════════════════════════
+// Every fetch snapshots the recommended pick per game; "Grade results" pulls final
+// scores and marks each one win/loss/push vs the pool line. This is the feedback loop
+// that shows which signals actually win — and powers the clickable team popup.
+let trackedPicks = {};
+try { trackedPicks = JSON.parse(localStorage.getItem('coversedge-picks') || '{}') || {}; } catch(e) { trackedPicks = {}; }
+function saveTrackedPicks() { try { localStorage.setItem('coversedge-picks', JSON.stringify(trackedPicks)); } catch(e) {} }
+
+function etDate(t) {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(t));
+}
+
+// Record the recommended side for every game that has a pool/Covers reference line.
+function snapshotPicks() {
+  Object.values(allGames).forEach(g => {
+    const E = computeEdge(g);
+    if (!E.hasCovers) return;
+    const date = etDate(g.time);
+    const key = (g.id || (normalizeTeamKey(g.away) + '@' + normalizeTeamKey(g.home))) + '|' + date;
+    const bb = bestBookForPick(g, E.dispSign);
+    const prev = trackedPicks[key];
+    trackedPicks[key] = {
+      date, away: g.away, home: g.home, tip: g.time,
+      poolLine: E.coversSpread, dispSign: E.dispSign, pickTeam: E.displayTeam,
+      edge: +(E.edge || 0).toFixed(2), mode: edgeMode,
+      vigLean: +(E.vigLean || 0).toFixed(2), steam: sharpSteaming(g, E.dispSign),
+      bestBook: bb ? { label: bb.label, key: bb.key, s: bb.s, sj: bb.sj } : null,
+      result: prev && prev.result && prev.result.final ? prev.result : null, // keep any grade already earned
+    };
+  });
+  saveTrackedPicks();
+}
+
+async function fetchScores() {
+  if (serverProxy) {
+    const res = await fetch('/api/scores?daysFrom=3', { cache: 'no-store' });
+    const rem = res.headers.get('x-requests-remaining'), used = res.headers.get('x-requests-used');
+    if (rem !== null) updateCreditsChip(rem, used);
+    const d = await res.json().catch(() => null);
+    return Array.isArray(d) ? d : [];
+  }
+  const key = (document.getElementById('apiKey').value || '').trim();
+  if (!key) throw new Error('need a key or the server proxy to grade');
+  const url = 'https://api.the-odds-api.com/v4/sports/basketball_ncaab/scores?daysFrom=3&apiKey=' + encodeURIComponent(key) + '&_cb=' + Date.now();
+  const d = await directFetch(url);
+  return Array.isArray(d) ? d : [];
+}
+
+async function gradeResults() {
+  const btn = document.getElementById('grade-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Grading…'; }
+  let scores;
+  try { scores = await fetchScores(); }
+  catch(e) { showToast('Grade failed: ' + (e.message || e)); if (btn) { btn.disabled = false; btn.textContent = '↻ Grade results'; } return; }
+  const nk = normalizeTeamKey;
+  const byKey = {};
+  scores.forEach(s => { if (s && s.completed && s.scores) byKey[nk(s.home_team) + '@' + nk(s.away_team)] = s; });
+
+  let graded = 0;
+  Object.values(trackedPicks).forEach(p => {
+    if (p.result && p.result.final) return;
+    const s = byKey[nk(p.home) + '@' + nk(p.away)];
+    if (!s) return;
+    const hs = parseFloat((s.scores.find(x => nk(x.name) === nk(p.home)) || {}).score);
+    const as = parseFloat((s.scores.find(x => nk(x.name) === nk(p.away)) || {}).score);
+    if (!isFinite(hs) || !isFinite(as)) return;
+    const homeMargin = hs - as;
+    const atsHome = homeMargin + p.poolLine; // > 0 → home covered the pool line
+    let outcome;
+    if (Math.abs(atsHome) < 1e-9) outcome = 'push';
+    else outcome = ((atsHome > 0) === (p.dispSign === 1)) ? 'win' : 'loss';
+    p.result = { final: true, homeScore: hs, awayScore: as, homeMargin, outcome };
+    graded++;
+  });
+  saveTrackedPicks();
+  renderRecord();
+  if (btn) { btn.disabled = false; btn.textContent = '↻ Grade results'; }
+  showToast('✓ Graded ' + graded + ' game' + (graded === 1 ? '' : 's'), 'success');
+}
+
+// Monday-start contest week containing `date` (ET). Returns the Monday's YYYY-MM-DD.
+function contestWeekStart(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  const dow = (d.getDay() + 6) % 7; // 0 = Monday
+  d.setDate(d.getDate() - dow);
+  return etDate(d);
+}
+
+const EDGE_BUCKETS = [
+  { lbl: '2.0+ pts', min: 2.0, max: Infinity },
+  { lbl: '1.5–2', min: 1.5, max: 2.0 },
+  { lbl: '1–1.5', min: 1.0, max: 1.5 },
+  { lbl: '0.5–1', min: 0.5, max: 1.0 },
+  { lbl: '< 0.5 (no edge)', min: -Infinity, max: 0.5 },
+];
+
+function tally(picks) {
+  let w = 0, l = 0, p = 0;
+  picks.forEach(x => { const o = x.result.outcome; if (o === 'win') w++; else if (o === 'loss') l++; else p++; });
+  const dec = w + l;
+  return { w, l, p, pct: dec ? Math.round((w / dec) * 1000) / 10 : null };
+}
+function recTxt(t) { return t.w + '-' + t.l + (t.p ? '-' + t.p : '') + (t.pct != null ? '  ·  ' + t.pct + '%' : ''); }
+
+function renderRecord() {
+  const bar = document.getElementById('record-bar');
+  const content = document.getElementById('record-content');
+  if (!bar || !content) return;
+  const graded = Object.values(trackedPicks).filter(p => p.result && p.result.final);
+  const tracked = Object.values(trackedPicks).length;
+
+  bar.style.display = '';
+  const cntEl = document.getElementById('record-count');
+  if (cntEl) cntEl.textContent = tracked ? '· ' + graded.length + ' of ' + tracked + ' graded' : '';
+
+  if (!graded.length) {
+    content.innerHTML = '<div style="padding:10px 4px;font-size:0.68rem;color:var(--soft);line-height:1.6">'
+      + (tracked ? tracked + ' picks tracked — click <b>↻ Grade results</b> after games finish to score them against your pool line.'
+                 : 'No picks tracked yet. Fetch lines during the season and your recommended side is saved for each game; grade them after they finish.')
+      + '</div>';
+    return;
+  }
+
+  const thisWeek = contestWeekStart(etDate(Date.now()));
+  const weekGraded = graded.filter(p => contestWeekStart(p.date) === thisWeek);
+  const overall = tally(graded), week = tally(weekGraded);
+  const flagged = tally(graded.filter(p => p.edge >= 1.5));
+  const vig = tally(graded.filter(p => p.vigLean >= 0.3));
+
+  let rows = EDGE_BUCKETS.map(b => {
+    const t = tally(graded.filter(p => p.edge >= b.min && p.edge < b.max));
+    if (!(t.w + t.l + t.p)) return '';
+    const barPct = t.pct != null ? t.pct : 0;
+    const clr = t.pct == null ? 'var(--soft)' : t.pct >= 55 ? 'var(--green)' : t.pct >= 50 ? 'var(--gold)' : 'var(--red)';
+    return `<div class="rec-row"><span class="rec-lbl">${b.lbl}</span><span class="rec-rec">${recTxt(t)}</span>
+      <span class="rec-meter"><span style="width:${Math.min(100, barPct)}%;background:${clr}"></span></span></div>`;
+  }).join('');
+
+  content.innerHTML = `
+    <div class="rec-top">
+      <div class="rec-stat"><div class="rec-num">${recTxt(overall)}</div><div class="rec-cap">Season ATS (following the pick)</div></div>
+      <div class="rec-stat"><div class="rec-num">${week.w + week.l + week.p ? recTxt(week) : '—'}</div><div class="rec-cap">This week (Mon-start)</div></div>
+      <div class="rec-stat"><div class="rec-num">${flagged.w + flagged.l ? recTxt(flagged) : '—'}</div><div class="rec-cap">Flagged picks (edge ≥ 1.5)</div></div>
+      <div class="rec-stat"><div class="rec-num">${vig.w + vig.l ? recTxt(vig) : '—'}</div><div class="rec-cap">⚡ Juice-lean picks</div></div>
+    </div>
+    <div class="rec-title">Hit rate by edge size — where your edge actually shows up:</div>
+    ${rows || '<div style="font-size:0.66rem;color:var(--soft)">Not enough graded games yet.</div>'}`;
+}
+
+function toggleRecord() {
+  const body = document.getElementById('record-body');
+  const arrow = document.getElementById('record-arrow');
+  const open = body.style.display === 'none';
+  body.style.display = open ? '' : 'none';
+  arrow.textContent = open ? '▲' : '▼';
+}
+
+// ═══════════════════════════════════════════════════
+//  TEAM POPUP — click a school to see its games
+// ═══════════════════════════════════════════════════
+function openTeamPopup(teamName) {
+  const modal = document.getElementById('team-overlay');
+  const title = document.getElementById('team-modal-title');
+  const body = document.getElementById('team-modal-body');
+  if (!modal || !body) return;
+  title.textContent = teamName;
+  modal.classList.add('open');
+
+  // Part A — your tracked/graded picks involving this team.
+  const mine = Object.values(trackedPicks)
+    .filter(p => p.home === teamName || p.away === teamName)
+    .sort((a, b) => new Date(b.tip) - new Date(a.tip));
+
+  let a = '<div class="tm-section-title">Your picks on this team</div>';
+  if (!mine.length) {
+    a += '<div class="tm-empty">No tracked picks yet — this fills in as you fetch lines during the season.</div>';
+  } else {
+    a += mine.map(p => {
+      const home = p.home === teamName;
+      const opp = home ? p.away : p.home;
+      const loc = home ? 'vs' : '@';
+      const picked = p.pickTeam === teamName;
+      const r = p.result;
+      let score = '<span class="tm-pending">not final</span>', cover = '';
+      if (r && r.final) {
+        const my = home ? r.homeScore : r.awayScore, th = home ? r.awayScore : r.homeScore;
+        score = my + '–' + th + ' ' + (my > th ? 'W' : 'L');
+        const badge = r.outcome === 'win' ? 'tm-win' : r.outcome === 'loss' ? 'tm-loss' : 'tm-push';
+        const txt = r.outcome === 'win' ? '✓ covered' : r.outcome === 'loss' ? '✗ no cover' : 'push';
+        cover = `<span class="tm-cover ${badge}">${txt}</span>`;
+      }
+      const poolDisp = (p.poolLine * (home ? 1 : -1));
+      return `<div class="tm-row">
+        <div class="tm-when">${new Date(p.tip).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
+        <div class="tm-game"><b>${loc} ${abbrev(opp)}</b><br><span class="tm-sub">pool ${sign(poolDisp)} · ${picked ? 'you picked ' + abbrev(teamName) : 'pick was ' + abbrev(p.pickTeam)}</span></div>
+        <div class="tm-res">${score}<br>${cover}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // Part B — recent form from ESPN (best-effort; live once the season starts).
+  body.innerHTML = a + '<div class="tm-section-title" style="margin-top:16px">Recent form <span style="font-weight:400;color:var(--soft)">· straight-up results</span></div><div id="tm-form"><div class="tm-empty">Loading recent games…</div></div>';
+  loadTeamForm(teamName);
+}
+
+function closeTeamPopup() {
+  const m = document.getElementById('team-overlay');
+  if (m) m.classList.remove('open');
+}
+
+// ESPN hidden API for NCAA MBB. Best-effort: graceful "unavailable" on any failure
+// (and it's naturally empty in the offseason).
+let _espnTeams = null;
+// Try ESPN direct (CORS-open on most endpoints); fall back to the app's CORS-proxy chain.
+async function espnGet(url) {
+  try { const r = await fetch(url, { cache: 'no-store' }); if (r.ok) return await r.json(); } catch(e) {}
+  return await proxyFetch(url);
+}
+async function loadTeamForm(teamName) {
+  const el = document.getElementById('tm-form');
+  if (!el) return;
+  try {
+    if (!_espnTeams) {
+      const j = await espnGet('https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/teams?limit=500');
+      _espnTeams = [].concat(...(j.sports?.[0]?.leagues?.[0]?.teams || []).map(t => t.team)).filter(Boolean);
+    }
+    const nk = normalizeTeamKey;
+    const want = nk(teamName);
+    const match = _espnTeams.find(t => nk(t.displayName) === want || nk(t.location) === want)
+      || _espnTeams.find(t => { const a = nk(t.displayName); return a.startsWith(want) || want.startsWith(a); });
+    if (!match) { el.innerHTML = '<div class="tm-empty">No ESPN match for this team.</div>'; return; }
+    const sj = await espnGet('https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/teams/' + match.id + '/schedule');
+    const done = (sj.events || []).filter(e => e.competitions?.[0]?.status?.type?.completed).slice(-8).reverse();
+    if (!done.length) { el.innerHTML = '<div class="tm-empty">No completed games yet this season.</div>'; return; }
+    el.innerHTML = done.map(e => {
+      const c = e.competitions[0];
+      const me = c.competitors.find(x => x.id === match.id) || {};
+      const opp = c.competitors.find(x => x.id !== match.id) || {};
+      const home = me.homeAway === 'home';
+      const win = me.winner === true;
+      return `<div class="tm-row">
+        <div class="tm-when">${new Date(e.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
+        <div class="tm-game"><b>${home ? 'vs' : '@'} ${opp.team?.abbreviation || opp.team?.location || ''}</b></div>
+        <div class="tm-res">${me.score?.value ?? me.score ?? ''}–${opp.score?.value ?? opp.score ?? ''} <span class="${win ? 'tm-win' : 'tm-loss'}" style="padding:1px 5px;border-radius:2px">${win ? 'W' : 'L'}</span></div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    el.innerHTML = '<div class="tm-empty">Recent form unavailable right now.</div>';
+  }
 }
 
 // ═══════════════════════════════════════════════════
@@ -3601,7 +3917,7 @@ function renderMobileCards(games, availBooks) {
         <div class="game-card-matchup">
           <div class="team-logo-wrap">${getTeamBadge(game.away)}${getTeamBadge(game.home)}</div>
           <div>
-            <div class="game-card-teams">${abbrev(game.away)}<br><span style="opacity:.4;font-size:.85em">@</span> ${abbrev(game.home)}</div>
+            <div class="game-card-teams"><span class="team-clickable" onclick="openTeamPopup('${jsq(game.away)}')">${abbrev(game.away)}</span><br><span style="opacity:.4;font-size:.85em">@</span> <span class="team-clickable" onclick="openTeamPopup('${jsq(game.home)}')">${abbrev(game.home)}</span></div>
             <div class="game-card-meta">${timeStr} · <span style="color:var(--green);font-weight:700;">${coversEdge >= 0.5 ? '★ PICK' : 'LINE'}: ${abbrev(displayTeam)}${coversEdge >= 0.5 ? ' +' + coversEdge.toFixed(1) : ''}</span></div>
           </div>
         </div>
@@ -3659,6 +3975,7 @@ function toggleDetail(rowId, gameRow) {
 }
 
 function sign(n) { return n > 0 ? `+${n}` : `${n}`; }
+function jsq(s) { return String(s || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
 
 function abbrev(name) {
   if (!name) return '';
@@ -3881,8 +4198,10 @@ function toggleHelp() {
 }
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
-    const o = document.getElementById('help-overlay');
-    if (o && o.classList.contains('open')) o.classList.remove('open');
+    ['help-overlay', 'team-overlay'].forEach(id => {
+      const o = document.getElementById(id);
+      if (o && o.classList.contains('open')) o.classList.remove('open');
+    });
   }
 });
 
@@ -3938,6 +4257,8 @@ function cacheBoard() {
 
 // Sync the vig-sensitivity control to the saved calibration and current mode.
 syncVigK();
+// Show any tracked-pick record restored from a prior session.
+renderRecord();
 
 // Load demo on page start so there's always something to see
 // Dark mode is handled by initDark() above — no auto-load on startup
