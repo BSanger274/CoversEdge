@@ -998,9 +998,22 @@ body.dark .covers-edge-text { color: #ffffff !important; }
       Lines loaded: <span id="pool-loaded-time" style="color:var(--ink);"></span>
     </div>
 
+    <!-- one-click bookmarklet (easiest) -->
+    <div style="font-size:0.62rem;color:var(--ink);line-height:1.9;margin-bottom:10px;padding:10px 12px;border:1.5px solid var(--green);border-radius:4px;background:rgba(45,122,69,0.06);">
+      <b style="color:var(--green);">⚡ Easiest — one-click grab:</b><br>
+      <span style="color:var(--soft);">
+        <b style="color:var(--green);">1.</b> Drag this button up to your browser's bookmarks bar (one time):
+        <a href="javascript:(function(){navigator.clipboard.writeText(document.documentElement.outerHTML).then(function(){alert('CoversEdge: pool page copied — switch to CoversEdge and click Load from Clipboard')}).catch(function(){alert('CoversEdge: copy blocked here — use the console command instead')})})()"
+           onclick="showToast('Don\'t click — DRAG this up to your bookmarks bar, then click it on your Covers pool page');return false;"
+           title="Drag me to your bookmarks bar"
+           style="display:inline-block;margin:2px 0 2px 6px;background:var(--green);color:#000;padding:4px 12px;font-size:0.66rem;font-family:'Syne',sans-serif;font-weight:700;letter-spacing:0.06em;border-radius:3px;text-decoration:none;cursor:grab;">📌 CoversEdge Pool Grab</a><br>
+        <b style="color:var(--green);">2.</b> On your <a href="https://contests.covers.com/officepools/picks/bets/a680d7a0-8943-439e-bd8d-b37300ba6ac2" target="_blank" style="color:var(--green);">pool pick page ↗</a>, click that bookmark → come back here → <b>⬇ Load from Clipboard</b>.
+      </span>
+    </div>
+
     <!-- instructions -->
     <div style="font-size:0.62rem;color:var(--ink);line-height:2;margin-bottom:10px;">
-      <b>How to get your pool lines in 3 steps:</b><br>
+      <b>Or the manual way, in 3 steps:</b><br>
       <span style="color:var(--soft);">
         <b style="color:var(--green);">1.</b> Go to your
         <a href="https://contests.covers.com/officepools/picks/bets/a680d7a0-8943-439e-bd8d-b37300ba6ac2"
@@ -1067,6 +1080,11 @@ body.dark .covers-edge-text { color: #ffffff !important; }
         <option value="sharpgap">Sharpest gap</option>
         <option value="beatall">Beat every book</option>
       </select>
+    </div>
+    <div class="threshold-wrap" id="vigk-wrap" title="How hard the sharp juice pulls the true line off the displayed number">
+      Vig sensitivity:
+      <input type="range" id="vigk" min="2" max="10" step="0.5" value="5" oninput="setVigK(this.value)" style="width:80px;accent-color:var(--accent)">
+      <span id="vigk-hint" style="font-weight:700;color:var(--accent);white-space:nowrap">−160 ≈ +0.5</span>
     </div>
     <div class="threshold-wrap">
       Highlight threshold:
@@ -1159,6 +1177,7 @@ body.dark .covers-edge-text { color: #ffffff !important; }
         <li>Press <kbd>F12</kbd> → <b>Console</b> → paste <kbd>copy(document.documentElement.outerHTML)</kbd> → Enter.</li>
         <li>Back here → <b>⬇ Load from Clipboard</b>. Then <b>Fetch Lines</b>.</li>
       </ol>
+      <div class="help-note"><b>Faster:</b> the <b>⚡ Easiest — one-click grab</b> box inside ⚡ Pool Lines gives you a <b>📌 CoversEdge Pool Grab</b> bookmarklet — drag it to your bookmarks bar once, then a single click on your pool page copies it (no F12).</div>
       <div class="help-note"><b>Confirm it worked:</b> the reference column header should read <b>POOL LINE</b> (gold) and each reference cell shows a small <b>“pool”</b> tag, with the status reading <b>“Live · Pool lines + API.”</b> If it says <b>MKT LINE</b> or <b>COVERS</b> instead, you're on a market estimate, not your pool number — (re)load your pool lines. Games whose books aren't posted yet show your pool line with no comparison; just hit Fetch Lines again once the books are up.</div>
 
       <h3>Picking your benchmark (“Edge vs”)</h3>
@@ -1326,8 +1345,9 @@ const SHARP_KEYS = ['pinnacle', 'circa', 'novig', 'prophetx'];
 let edgeMode = 'truevig';
 
 // Cents-per-point calibration: how strongly juice pulls the true line off the number.
-// Seeded so a -160 favorite (~+0.9 no-vig prob edge) lands ~0.5 pt past the line.
-const VIG_K = 5.0;
+// Seeded so a -160 favorite lands ~0.5 pt past the line; tunable live via the UI control.
+let VIG_K = 5.0;
+try { const v = parseFloat(localStorage.getItem('coversedge-vigk')); if (!isNaN(v) && v >= 1 && v <= 12) VIG_K = v; } catch(e) {}
 
 function impliedProb(american) {
   const a = +american;
@@ -1588,6 +1608,26 @@ function enrichGame(g) {
 // ═══════════════════════════════════════════════════
 const ODDS_KEY_LS = 'coversedge-odds-key';
 
+// When a serverless /api/odds proxy with a configured key is available, the browser
+// doesn't need a key at all and odds are fetched server-side (reliable + credit-cached).
+let serverProxy = false;
+async function probeServerProxy() {
+  try {
+    const r = await fetch('/api/odds?probe=1', { cache: 'no-store' });
+    if (r.ok) { const j = await r.json(); serverProxy = !!j.hasKey; }
+  } catch(e) { /* no proxy — fall back to in-browser fetch */ }
+  if (serverProxy) {
+    const inp = document.getElementById('apiKey');
+    if (inp) { inp.placeholder = 'Server key active — no key needed, just click Fetch Lines'; }
+    const note = document.querySelector('.api-note');
+    if (note && !note.dataset.proxy) {
+      note.dataset.proxy = '1';
+      note.insertAdjacentHTML('afterbegin', '<span style="color:var(--green);font-weight:700">✓ Server key active — no key needed. </span>');
+    }
+  }
+}
+probeServerProxy();
+
 // Show remaining monthly Odds API credits (from the API's response headers).
 function updateCreditsChip(remaining, used) {
   if (remaining == null) return;
@@ -1602,9 +1642,9 @@ function updateCreditsChip(remaining, used) {
 
 async function fetchLiveData() {
   const apiKey = document.getElementById('apiKey').value.trim();
-  if (!apiKey) { showToast('Please enter your API key from the-odds-api.com'); return; }
-  // Remember the key so it only has to be entered once per browser.
-  try { localStorage.setItem(ODDS_KEY_LS, apiKey); } catch(e) {}
+  if (!apiKey && !serverProxy) { showToast('Please enter your API key from the-odds-api.com'); return; }
+  // Remember the key so it only has to be entered once per browser (not needed with a server key).
+  if (apiKey) { try { localStorage.setItem(ODDS_KEY_LS, apiKey); } catch(e) {} }
 
   const setStatus = (msg) => {
     const el = document.getElementById('main-content');
@@ -1902,6 +1942,17 @@ async function fetchAllEvents(apiKey) {
 }
 
 async function fetchOddsRegion(apiKey, regions) {
+  // Prefer the serverless proxy when a server key is configured — same-origin, no CORS
+  // proxies, credit-cached, and it surfaces the remaining-credits headers.
+  if (serverProxy) {
+    const res = await fetch('/api/odds?regions=' + encodeURIComponent(regions), { cache: 'no-store' });
+    const rem = res.headers.get('x-requests-remaining'), used = res.headers.get('x-requests-used');
+    if (rem !== null) updateCreditsChip(rem, used);
+    const data = await res.json().catch(() => null);
+    if (data && data.message) throw new Error(data.message);
+    if (Array.isArray(data)) return data.filter(g => g.sport_key === 'basketball_ncaab' || !g.sport_key);
+    throw new Error('Unexpected response from odds proxy');
+  }
   const bust = '&_cb=' + Date.now();
   const from = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
   const to   = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().replace(/\.\d{3}Z$/, 'Z');
@@ -2458,13 +2509,31 @@ function recordHistory() {
         const jh = juiceHistory[jkey];
         const last = jh[jh.length - 1];
         if (!last || last.s !== line.s || last.sj !== line.sj || last.sjOpp !== (line.sjOpp ?? null)) {
-          jh.push({ s: line.s, sj: line.sj ?? null, sjOpp: line.sjOpp ?? null });
+          jh.push({ s: line.s, sj: line.sj ?? null, sjOpp: line.sjOpp ?? null, t: Date.now() });
           if (jh.length > 8) jh.shift();
         }
       }
     });
   });
+  saveJuiceHistory();
 }
+
+// Persist juice history so the 📈 steaming trend survives page reloads and carries
+// across days (it's how the market has moved on a locked pool line over the week).
+function saveJuiceHistory() {
+  try { localStorage.setItem('coversedge-juice-history', JSON.stringify(juiceHistory)); } catch(e) {}
+}
+(function initJuiceHistory() {
+  try {
+    const j = JSON.parse(localStorage.getItem('coversedge-juice-history') || 'null');
+    if (!j || typeof j !== 'object') return;
+    const cutoff = Date.now() - 14 * 86400000; // drop anything older than 2 weeks
+    for (const k of Object.keys(j)) {
+      const arr = (j[k] || []).filter(e => !e.t || e.t >= cutoff);
+      if (arr.length) juiceHistory[k] = arr;
+    }
+  } catch(e) {}
+})();
 
 // Is the sharp market's juice STEAMING toward the pick? i.e. at the same displayed line,
 // has the price on the pick side gotten heavier (more negative) across recent refreshes?
@@ -3031,7 +3100,30 @@ function toggleTopPicks() {
 
 function setEdgeMode(mode) {
   edgeMode = mode;
+  syncVigK();
   if (allGames.length) renderTable();
+}
+
+// Vig-sensitivity calibration: only meaningful for the true-line mode.
+function setVigK(val) {
+  VIG_K = parseFloat(val);
+  try { localStorage.setItem('coversedge-vigk', String(VIG_K)); } catch(e) {}
+  updateVigHint();
+  if (allGames.length) renderTable();
+}
+function updateVigHint() {
+  const hint = document.getElementById('vigk-hint');
+  if (!hint) return;
+  // Show what a -160 favorite's lean works out to at the current sensitivity.
+  const lean = (-5 - trueLineHome(-5, -160, null)).toFixed(1); // magnitude of the offset
+  hint.textContent = '−160 ≈ +' + Math.abs(lean);
+}
+function syncVigK() {
+  const wrap = document.getElementById('vigk-wrap');
+  const slider = document.getElementById('vigk');
+  if (slider) slider.value = VIG_K;
+  if (wrap) wrap.style.display = (edgeMode === 'truevig') ? '' : 'none';
+  updateVigHint();
 }
 
 // ═══════════════════════════════════════════════════
@@ -3843,6 +3935,9 @@ function cacheBoard() {
   const el = document.getElementById('last-fetch-time');
   if (el) el.textContent = 'Saved board · ' + when + ' · click Fetch Lines for today’s';
 })();
+
+// Sync the vig-sensitivity control to the saved calibration and current mode.
+syncVigK();
 
 // Load demo on page start so there's always something to see
 // Dark mode is handled by initDark() above — no auto-load on startup
