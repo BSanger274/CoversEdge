@@ -1197,6 +1197,17 @@ function buildDemo() {
     { away:'La Salle Explorers', home:'Davidson Wildcats',         time:'2026-03-03T17:00:00Z',
       books:{ covers:{s:-10,sj:-110,t:133,tj:-110,ml:-500}, pinnacle:{s:-10.5,sj:-106,t:133,tj:-107,ml:-520}, novig:{s:-10.5,sj:-104,t:133.5,tj:-104,ml:-535}, prophetx:{s:-10.5,sj:-105,t:133,tj:-105,ml:-515}, fanduel:{s:-10.5,sj:-115,t:133,tj:-115,ml:-500}, circa:{s:-11,sj:-108,t:133.5,tj:-108,ml:-545}, draftkings:{s:-10.5,sj:-110,t:133,tj:-110,ml:-520}, caesars:{s:-10.5,sj:-110,t:133,tj:-110,ml:-515}, bookmaker:{s:-11,sj:-105,t:133.5,tj:-105,ml:-540}, betonline:{s:-10.5,sj:-110,t:133,tj:-110,ml:-520} } },
   ];
+  // The raw slate above is hard-coded to 2026-03-03. Rebase every game onto the
+  // upcoming day so the demo always renders — renderTable() hides any game that
+  // already tipped off, which would otherwise leave a first-time visitor staring
+  // at an empty "0 games" table once that date is in the past.
+  const anchor = Date.UTC(2026, 2, 3); // 2026-03-03 00:00 UTC — the date raw[] times use
+  const now = new Date();
+  const targetUTC = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  let shift = targetUTC - anchor; // ms to move the demo date onto today (preserves each game's time-of-day)
+  const minTime = Math.min(...raw.map(g => Date.parse(g.time)));
+  if (minTime + shift < Date.now()) shift += 86400000; // if the earliest game already tipped, roll the whole slate to tomorrow
+  raw.forEach(g => { g.time = new Date(Date.parse(g.time) + shift).toISOString(); });
   return raw.map(g => enrichGame(g));
 }
 
@@ -1745,8 +1756,9 @@ function parseCoversMatchupsHtml(html, dateStr) {
         games[key] = { away, home, time: dateStr + 'T23:59:00Z' };
         const spreadIdx = Math.floor(i / 2) * 2;
         if (spreadMatches[spreadIdx]) {
-          const s = Math.round(parseFloat(spreadMatches[spreadIdx][1]) * 2) / 2;
-          if (!isNaN(s) && Math.abs(s) >= 0.5 && Math.abs(s) < 60) lines[key] = { s, sRaw: parseFloat(spread), sj: -110 };
+          const sRaw = parseFloat(spreadMatches[spreadIdx][1]);
+          const s = Math.round(sRaw * 2) / 2;
+          if (!isNaN(s) && Math.abs(s) >= 0.5 && Math.abs(s) < 60) lines[key] = { s, sRaw, sj: -110 };
         }
       }
       if (Object.keys(games).length > 0) return { lines, games };
@@ -2853,7 +2865,7 @@ const TEAM_COLORS = {
   'east tennessee state buccaneers':['#041E42','#FFC425'],
   'jacksonville state gamecocks':  ['#CC0000','#003DA5'],
   'samford bulldogs':              ['#003087','#C8102E'],
-  'vmI keydets':                   ['#C41E3A','#ffcc00'],
+  'vmi keydets':                   ['#C41E3A','#ffcc00'],
   'furman paladins':               ['#582C83','#ffffff'],
   'mercer bears':                  ['#F26522','#1a1a1a'],
   'western carolina catamounts':   ['#592C88','#CFC493'],
@@ -2944,7 +2956,7 @@ const TEAM_COLORS = {
   'winthrop eagles':               ['#872434','#c0a06b'],
   'kennesaw state owls':           ['#FFCD00','#1a1a1a'],
   'north alabama lions':           ['#461660','#B5A268'],
-  'eastern illinois panthers':     ['#004B98','#grey'],
+  'eastern illinois panthers':     ['#004B98','#808080'],
   'tennessee martin skyhawks':     ['#FF8200','#003DA5'],
   'se missouri state redhawks':    ['#CC0000','#1a1a1a'],
   'siu edwardsville cougars':      ['#CC0000','#1a1a1a'],
