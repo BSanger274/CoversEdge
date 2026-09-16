@@ -828,6 +828,82 @@ body.dark .covers-edge-text { color: #ffffff !important; }
   justify-content: space-between;
 }
 .game-card-delta span { color: var(--ink); font-weight: 700; }
+
+/* ── HELP BUTTON + MODAL ── */
+.help-btn {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  border: 1.5px solid var(--soft);
+  background: transparent;
+  color: var(--soft);
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 0.8rem;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+.help-btn:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+.help-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(10,14,20,0.55);
+  z-index: 1000;
+  padding: 24px;
+  overflow-y: auto;
+}
+.help-overlay.open { display: flex; align-items: flex-start; justify-content: center; }
+.help-modal {
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+  max-width: 560px;
+  width: 100%;
+  margin: 40px auto;
+  position: relative;
+}
+.help-modal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 3px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+}
+.help-modal-head h2 {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.05rem; font-weight: 800; letter-spacing: -0.01em;
+}
+.help-close {
+  background: transparent; border: none; color: var(--paper);
+  font-size: 1.3rem; cursor: pointer; line-height: 1; padding: 0 4px;
+}
+.help-close:hover { color: var(--flag); }
+.help-body { padding: 18px 22px 22px; }
+.help-body h3 {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--accent);
+  margin: 18px 0 8px;
+}
+.help-body h3:first-child { margin-top: 0; }
+.help-body ol, .help-body ul { margin: 0 0 4px 20px; }
+.help-body li { font-size: 0.74rem; line-height: 1.7; color: var(--ink); margin-bottom: 4px; }
+.help-body li b { color: var(--ink); }
+.help-body .help-note { font-size: 0.66rem; color: var(--soft); line-height: 1.6; margin-top: 6px; }
+.help-body kbd { background: var(--ink); color: var(--paper); padding: 1px 6px; font-size: 0.62rem; border-radius: 2px; font-family: 'IBM Plex Mono', monospace; }
+.help-body a { color: var(--green); }
+.help-legend-row { display: flex; align-items: center; gap: 8px; font-size: 0.7rem; color: var(--ink); margin-bottom: 5px; }
+.help-sw { width: 14px; height: 14px; border-radius: 2px; flex-shrink: 0; }
+.help-forget {
+  margin-top: 18px;
+  font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.64rem;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 7px 14px; cursor: pointer;
+  background: transparent; border: 1.5px solid var(--line); color: var(--soft);
+}
+.help-forget:hover { border-color: var(--red); color: var(--red); }
 </style>
 </head>
 <body>
@@ -841,6 +917,7 @@ body.dark .covers-edge-text { color: #ffffff !important; }
   </div>
   <div class="header-meta">
     <div class="live-chip"><div class="dot"></div><span id="clock">--:--:-- ET</span></div>
+    <button class="help-btn" onclick="toggleHelp()" title="How to use this site" aria-label="How to use this site">?</button>
     <div class="dark-toggle" onclick="toggleDark()" title="Toggle dark mode">
       <span class="dark-toggle-label" id="dark-label">LIGHT</span>
       <div class="dark-toggle-track"><div class="dark-toggle-thumb"></div></div>
@@ -870,7 +947,7 @@ body.dark .covers-edge-text { color: #ffffff !important; }
     style="background:var(--cream);color:var(--ink);border:1.5px solid var(--line);opacity:0.5;cursor:not-allowed;"
     disabled>↻ Refresh Now</button>
   <button class="btn btn-demo" onclick="loadDemo()">Use Demo Data</button>
-  <div class="api-note">Free tier: 500 req/mo · basketball_ncaab · spreads + h2h + totals<br>No key? Click "Use Demo Data" for sample layout.</div>
+  <div class="api-note">Free tier: 500 req/mo · basketball_ncaab · spreads + h2h + totals<br>No key? Click "Use Demo Data" for sample layout.<br><span id="credits-chip" style="color:var(--flag);font-weight:600"></span></div>
 </div>
 
 <!-- POOL LINES BAR -->
@@ -1011,6 +1088,46 @@ body.dark .covers-edge-text { color: #ffffff !important; }
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- HELP MODAL -->
+<div class="help-overlay" id="help-overlay" onclick="if(event.target===this)toggleHelp()">
+  <div class="help-modal">
+    <div class="help-modal-head">
+      <h2>How to run CoversEdge</h2>
+      <button class="help-close" onclick="toggleHelp()" aria-label="Close">✕</button>
+    </div>
+    <div class="help-body">
+
+      <h3>Every day · about 2 minutes</h3>
+      <ol>
+        <li>Open this page. Your Odds API key is saved, and the <b>last board you pulled shows instantly</b> — no API call, no credits spent.</li>
+        <li>To pull <b>today's fresh lines</b>, click <b>⬇ Fetch Lines</b> once. (This is the only thing that spends credits.)</li>
+        <li><b>To compare against your Covers pool</b>, expand <b>⚡ Pool Lines</b> and follow its 3 steps: open your pool pick page → paste the one-line console command it gives you → click <b>⬇ Load from Clipboard</b>, then Fetch Lines.</li>
+      </ol>
+      <div class="help-note"><b>Protecting your monthly credits:</b> one Fetch Lines ≈ 12 of your 500 monthly credits, so ~40 pulls a month. The <b>⚡ credits-left counter</b> under the key box shows how many remain. Leave <b>↻ Auto-Refresh</b> on <b>OFF</b> (the default) and just click Fetch when you want an update — auto-refresh every 60s would drain the month in a single evening.</div>
+
+      <h3>First-time setup · once</h3>
+      <ol>
+        <li>Get a free key at <a href="https://the-odds-api.com" target="_blank" rel="noopener">the-odds-api.com</a> — no credit card needed.</li>
+        <li>Paste it into the <b>The-Odds-API Key</b> box and click <b>⬇ Fetch Lines</b>.</li>
+        <li>It's remembered from then on — you won't need to paste it again on this device.</li>
+      </ol>
+
+      <h3>No key handy?</h3>
+      <ul>
+        <li>Click <b>Use Demo Data</b> for a full sample board with today's date, so you can see the layout without a key.</li>
+      </ul>
+
+      <h3>Reading the board</h3>
+      <div class="help-legend-row"><span class="help-sw" style="background:rgba(45,122,69,0.3);border:1px solid var(--green)"></span> Green = Covers / pool line beats every book (your edge)</div>
+      <div class="help-legend-row"><span class="help-sw" style="background:rgba(30,80,160,0.12);border:2px solid #1a50a0"></span> Blue outline = best book (most points for the bettor)</div>
+      <div class="help-legend-row"><span class="help-sw" style="background:rgba(232,184,75,0.3);border:1px solid var(--gold)"></span> Gold = gap vs Covers exceeds your highlight threshold</div>
+      <div class="help-legend-row"><span style="color:var(--green);font-weight:700">▼</span>&nbsp;better&nbsp;&nbsp;<span style="color:var(--red);font-weight:700">▲</span>&nbsp;worse — line moved since the last refresh</div>
+
+      <button class="help-forget" onclick="forgetOddsKey()">Forget my saved key on this device</button>
+    </div>
+  </div>
+</div>
 
 </div><!-- /wrap -->
 
@@ -1288,9 +1405,25 @@ function enrichGame(g) {
 // ═══════════════════════════════════════════════════
 //  LIVE DATA FETCH
 // ═══════════════════════════════════════════════════
+const ODDS_KEY_LS = 'coversedge-odds-key';
+
+// Show remaining monthly Odds API credits (from the API's response headers).
+function updateCreditsChip(remaining, used) {
+  if (remaining == null) return;
+  const rem = parseInt(remaining, 10);
+  try { localStorage.setItem('coversedge-credits', JSON.stringify({ rem, used, ts: Date.now() })); } catch(e) {}
+  const el = document.getElementById('credits-chip');
+  if (!el) return;
+  const low = !isNaN(rem) && rem < 50;
+  el.style.color = low ? 'var(--red)' : 'var(--flag)';
+  el.textContent = '⚡ ' + rem + ' Odds API credits left this month' + (used ? ' (' + used + ' used)' : '') + (low ? ' — running low' : '');
+}
+
 async function fetchLiveData() {
   const apiKey = document.getElementById('apiKey').value.trim();
   if (!apiKey) { showToast('Please enter your API key from the-odds-api.com'); return; }
+  // Remember the key so it only has to be entered once per browser.
+  try { localStorage.setItem(ODDS_KEY_LS, apiKey); } catch(e) {}
 
   const setStatus = (msg) => {
     const el = document.getElementById('main-content');
@@ -1432,6 +1565,7 @@ async function fetchLiveData() {
         (hasScraped ? 'Live · Covers + API' : 'Live · API · mkt-median ref line') +
         ' · ' + new Date().toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit', second:'2-digit', hour12:true });
     }
+    cacheBoard();
     startAutoRefresh();
   } catch(e) {
     console.error('[CoversEdge] fetchLiveData error:', e);
@@ -1455,6 +1589,11 @@ async function directFetch(url, asText = false) {
     ]);
     if (res.ok) {
       console.log('[CoversEdge] directFetch direct OK', res.status);
+      // The Odds API reports quota usage in response headers — surface it so the
+      // user can watch their monthly credits. Only readable on the direct (non-proxy) path.
+      const rem = res.headers.get('x-requests-remaining');
+      const used = res.headers.get('x-requests-used');
+      if (rem !== null) updateCreditsChip(rem, used);
       if (asText) return res.text();
       return res.json();
     }
@@ -3416,6 +3555,68 @@ function updateRefreshChip() {
   const s = refreshCountdown % 60;
   chip.textContent = m > 0 ? `in ${m}m ${s.toString().padStart(2,'0')}s` : `in ${refreshCountdown}s`;
 }
+
+// ── HELP MODAL ──
+function toggleHelp() {
+  const o = document.getElementById('help-overlay');
+  if (o) o.classList.toggle('open');
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    const o = document.getElementById('help-overlay');
+    if (o && o.classList.contains('open')) o.classList.remove('open');
+  }
+});
+
+function forgetOddsKey() {
+  try { localStorage.removeItem(ODDS_KEY_LS); } catch(e) {}
+  const inp = document.getElementById('apiKey');
+  if (inp) inp.value = '';
+  showToast('✓ Saved key cleared from this device');
+}
+
+// ── REMEMBER ODDS KEY ──
+// Restore the saved key on load so it never has to be re-entered. We deliberately
+// do NOT auto-fetch — every fetch spends Odds API credits (free tier = 500/month),
+// so a fresh pull only happens when the user explicitly clicks Fetch Lines.
+(function initOddsKey() {
+  let saved = null;
+  try { saved = localStorage.getItem(ODDS_KEY_LS); } catch(e) {}
+  if (saved) {
+    const inp = document.getElementById('apiKey');
+    if (inp) inp.value = saved;
+  }
+  // Restore last-known credit count so it shows before the first fetch of the session.
+  try {
+    const c = JSON.parse(localStorage.getItem('coversedge-credits') || 'null');
+    if (c && c.rem != null) updateCreditsChip(c.rem, c.used);
+  } catch(e) {}
+})();
+
+// ── LAST-BOARD CACHE ──
+// Persist the most recent live board so re-opening the page shows the lines
+// instantly, with zero API calls. A fresh pull still requires a manual Fetch Lines.
+function cacheBoard() {
+  try {
+    const slim = allGames.map(g => ({
+      id: g.id, away: g.away, home: g.home, time: g.time, books: g.books,
+      maxSpreadVar: g.maxSpreadVar, maxTotalVar: g.maxTotalVar, maxDeltaVsCovers: g.maxDeltaVsCovers,
+    }));
+    localStorage.setItem('coversedge-last-board', JSON.stringify({ games: slim, ts: Date.now() }));
+  } catch(e) {}
+}
+
+(function initBoardCache() {
+  let parsed = null;
+  try { parsed = JSON.parse(localStorage.getItem('coversedge-last-board') || 'null'); } catch(e) {}
+  if (!parsed || !parsed.games || !parsed.games.length) return;
+  allGames = parsed.games;
+  renderTable(); // renderTable hides games that already tipped, so a stale board self-empties
+  const d = new Date(parsed.ts);
+  const when = d.toLocaleString('en-US', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit', hour12:true });
+  const el = document.getElementById('last-fetch-time');
+  if (el) el.textContent = 'Saved board · ' + when + ' · click Fetch Lines for today’s';
+})();
 
 // Load demo on page start so there's always something to see
 // Dark mode is handled by initDark() above — no auto-load on startup
