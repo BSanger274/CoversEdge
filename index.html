@@ -964,7 +964,7 @@ body.dark .covers-edge-text { color: #ffffff !important; }
 <header>
   <div class="masthead">
     <div class="wordmark">COVERS<em>EDGE</em></div>
-    <div class="tagline">NCAAM Line Comparison · Covers Consensus vs Sharp Market</div>
+    <div class="tagline">NCAAM Line Comparison · Grading Line vs Sharp Market</div>
   </div>
   <div class="header-meta">
     <div class="live-chip"><div class="dot"></div><span id="clock">--:--:-- ET</span></div>
@@ -1100,6 +1100,14 @@ body.dark .covers-edge-text { color: #ffffff !important; }
     <button class="filter-btn" data-sort="alphabetical" onclick="setSort('alpha',this)">A–Z</button>
   </div>
   <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+    <div class="threshold-wrap" title="The line you're graded against. DK (ESPN) is The Hook's grading line; Covers is the old fallback.">
+      Reference:
+      <select id="ref-source" onchange="setRefSource(this.value)"
+        style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;background:var(--paper);color:var(--ink);border:1px solid var(--line);padding:4px 8px;letter-spacing:0.06em;cursor:pointer;outline:none;accent-color:var(--accent);">
+        <option value="dk">DK (ESPN)</option>
+        <option value="covers">Covers</option>
+      </select>
+    </div>
     <div class="threshold-wrap">
       Edge vs:
       <select id="edge-mode" onchange="setEdgeMode(this.value)"
@@ -1214,7 +1222,7 @@ body.dark .covers-edge-text { color: #ffffff !important; }
     </div>
     <div class="help-body">
 
-      <div class="help-note" style="margin-bottom:14px;color:var(--ink)"><b>The idea:</b> two kinds of line. Your <b>Covers pool line is your locked reference</b> — you load it <b>once</b> when the pool posts the week. The <b>sportsbook lines are live</b> — you pull them <b>fresh each session</b>. Your edge is how far your locked pool number sits from the sharp market.</div>
+      <div class="help-note" style="margin-bottom:14px;color:var(--ink)"><b>The idea:</b> you're graded against <b>DraftKings</b> (The Hook's grading line, pulled from ESPN). This tool overlays the <b>sharp market</b> on top of DK and flags where DK is soft — so you lock the stale number before it moves. Your edge = how far DK sits from the sharp true line. <i>(Reference defaults to DK; the <b>Reference ▾</b> toggle flips to Covers if you ever need the old source.)</i></div>
 
       <h3>① When you open the site (each session)</h3>
       <ol>
@@ -1223,16 +1231,9 @@ body.dark .covers-edge-text { color: #ffffff !important; }
         <li>Read the <b>🎯 Top Picks This Week</b> panel — your ballot, ranked by edge, each with the best book to bet it at.</li>
       </ol>
 
-      <h3>② Load your Covers pool lines (once a week)</h3>
-      <p style="font-size:0.7rem;color:var(--soft);line-height:1.6;margin-bottom:6px">Do this when your pool posts the week's slate. These are the <b>accurate lines you're graded against</b> — they don't move, so you only load them once (unless your pool revises one).</p>
-      <ol>
-        <li>Expand <b>⚡ Pool Lines</b> (below the key box).</li>
-        <li>Open your <a href="https://contests.covers.com/officepools/picks/bets/a680d7a0-8943-439e-bd8d-b37300ba6ac2" target="_blank" rel="noopener">Covers pool pick page ↗</a> in another tab; let it fully load.</li>
-        <li>Press <kbd>F12</kbd> → <b>Console</b> → paste <kbd>copy(document.documentElement.outerHTML)</kbd> → Enter.</li>
-        <li>Back here → <b>⬇ Load from Clipboard</b>. Then <b>Fetch Lines</b>.</li>
-      </ol>
-      <div class="help-note"><b>Faster:</b> the <b>⚡ Easiest — one-click grab</b> box inside ⚡ Pool Lines gives you a <b>📌 CoversEdge Pool Grab</b> bookmarklet — drag it to your bookmarks bar once, then a single click on your pool page copies it (no F12).</div>
-      <div class="help-note"><b>Confirm it worked:</b> the reference column header should read <b>POOL LINE</b> (gold) and each reference cell shows a small <b>“pool”</b> tag, with the status reading <b>“Live · Pool lines + API.”</b> If it says <b>MKT LINE</b> or <b>COVERS</b> instead, you're on a market estimate, not your pool number — (re)load your pool lines. Games whose books aren't posted yet show your pool line with no comparison; just hit Fetch Lines again once the books are up.</div>
+      <h3>② The reference line (DK — automatic)</h3>
+      <p style="font-size:0.7rem;color:var(--soft);line-height:1.6;margin-bottom:6px">Nothing to load. By default the <b>reference column is DraftKings, pulled from ESPN</b> — the same line The Hook grades you on. It loads with every Fetch Lines. Confirm the column header reads <b>DK · GRADING</b> and the status says <b>“Live · DK (ESPN) + sharps.”</b></p>
+      <div class="help-note"><b>Fallback — Covers:</b> flip <b>Reference ▾</b> to <b>Covers</b> only if you ever go back to a Covers-graded pool. That reveals the <b>⚡ Pool Lines</b> bar, where you load your pool page (one-click <b>📌 Pool Grab</b> bookmarklet, or F12 → <kbd>copy(document.documentElement.outerHTML)</kbd> → <b>Load from Clipboard</b>).</div>
 
       <h3>Picking your benchmark (“Edge vs”)</h3>
       <ul>
@@ -1404,6 +1405,12 @@ let juiceHistory = {}; // gameId|bookKey → [{s, sj, sjOpp}] — for detecting 
 //   'beatall'           — stricter: Covers must beat EVERY book (incl. retail).
 const SHARP_KEYS = ['pinnacle', 'circa', 'novig', 'prophetx'];
 let edgeMode = 'truevig';
+
+// Reference line source — the line you're GRADED against. 'dk' = DraftKings via ESPN
+// (The Hook pool's grading line, auto-fetched, default); 'covers' = the old Covers
+// consensus/pool-paste path, kept as a fallback toggle in case the pool reverts.
+let refSource = 'dk';
+try { const rs = localStorage.getItem('coversedge-refsource'); if (rs === 'covers' || rs === 'dk') refSource = rs; } catch(e) {}
 
 // Cents-per-point calibration: how strongly juice pulls the true line off the number.
 // Seeded so a -160 favorite lands ~0.5 pt past the line; tunable live via the UI control.
@@ -1586,7 +1593,10 @@ function buildDemo() {
   let shift = targetUTC - anchor; // ms to move the demo date onto today (preserves each game's time-of-day)
   const minTime = Math.min(...raw.map(g => Date.parse(g.time)));
   if (minTime + shift < Date.now()) shift += 86400000; // if the earliest game already tipped, roll the whole slate to tomorrow
-  raw.forEach(g => { g.time = new Date(Date.parse(g.time) + shift).toISOString(); });
+  raw.forEach(g => {
+    g.time = new Date(Date.parse(g.time) + shift).toISOString();
+    if (g.books.covers) g.books.covers.fromDK = true; // demo reflects the DK · grading framing
+  });
   return raw.map(g => enrichGame(g));
 }
 
@@ -1717,7 +1727,7 @@ async function fetchLiveData() {
     if (el) el.innerHTML = `<div class="state-panel"><h3 style="color:var(--red)">⚠ Error</h3><p style="font-size:0.85rem;max-width:500px;line-height:1.6">${msg}</p><p style="font-size:0.75rem;opacity:0.6;margin-top:12px">Open browser DevTools (F12 → Console) for details.</p></div>`;
   };
 
-  const hasPoolLines = Object.keys(poolLinesCache).length > 0;
+  const hasPoolLines = refSource === 'covers' && Object.keys(poolLinesCache).length > 0;
   const totalSteps = hasPoolLines ? 3 : 4;
 
   setStatus(`Step 1/${totalSteps} — Fetching US odds (DraftKings, FanDuel…)`);
@@ -1800,9 +1810,14 @@ async function fetchLiveData() {
         new Date().toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit', second:'2-digit', hour12:true });
 
     } else {
-      // No pool lines — fetch Covers as usual
-      setStatus('Step 4/4 — Fetching Covers consensus lines…');
-      try { coversResult_val = await fetchCoversLines(); } catch(e) { /* non-fatal */ }
+      // Fetch the reference line: DraftKings via ESPN (default) or Covers (fallback toggle).
+      if (refSource === 'dk') {
+        setStatus('Step 4/4 — Fetching DraftKings lines (ESPN)…');
+        try { coversResult_val = await fetchEspnDK(); } catch(e) { /* non-fatal */ }
+      } else {
+        setStatus('Step 4/4 — Fetching Covers consensus lines…');
+        try { coversResult_val = await fetchCoversLines(); } catch(e) { /* non-fatal */ }
+      }
 
       const coversMap   = coversResult_val.lines || {};
       const coversGames = coversResult_val.games || {};
@@ -1842,9 +1857,10 @@ async function fetchLiveData() {
       snapshotPrevLines();
       allGames = parseApiResponse(allApiGames, coversMap);
       recordHistory(); isLiveMode = true; enableRefreshNow(); renderTable();
+      const hasDK = allGames.some(g => g.books.covers?.fromDK);
       const hasScraped = allGames.some(g => g.books.covers?.fromScraper);
       document.getElementById('last-fetch-time').textContent =
-        (hasScraped ? 'Live · Covers + API' : 'Live · API · mkt-median ref line') +
+        (hasDK ? 'Live · DK (ESPN) + sharps' : hasScraped ? 'Live · Covers + API' : 'Live · API · mkt-median ref line') +
         ' · ' + new Date().toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit', second:'2-digit', hour12:true });
     }
     cacheBoard();
@@ -2027,6 +2043,67 @@ async function fetchOddsRegion(apiKey, regions) {
   if (data && data.message) throw new Error(data.message);
   if (Array.isArray(data)) return data.filter(g => g.sport_key === 'basketball_ncaab' || !g.sport_key);
   throw new Error('Unexpected response from odds API');
+}
+
+// Pull the DraftKings spread (home-team terms) + both-side juice from an ESPN
+// competition's odds array. Mirrors what The Hook pool grades against.
+function extractDK(comp) {
+  const odds = (comp && comp.odds) || [];
+  let dk = odds.find(o => /draftkings/i.test((o.provider && o.provider.name) || '') || String(o.provider && o.provider.id) === '100') || odds[0];
+  if (!dk || dk.spread == null) return null;
+  const hto = dk.homeTeamOdds || {}, ato = dk.awayTeamOdds || {};
+  const spread = parseFloat(dk.spread); // ESPN reports the favorite's line (≤ 0)
+  if (!isFinite(spread)) return null;
+  let homeSpread;
+  if (spread > 0) homeSpread = spread;                        // unusual: already a home number
+  else if (ato.favorite && !hto.favorite) homeSpread = -spread; // away favored → home is the dog
+  else homeSpread = spread;                                    // home favored (or pick'em)
+  const num = v => (v == null || v === '' || !isFinite(parseFloat(v))) ? null : Math.round(parseFloat(v));
+  return {
+    s: Math.round(homeSpread * 2) / 2,
+    sRaw: homeSpread,
+    sj: num(hto.spreadOdds) ?? -110,
+    sjOpp: num(ato.spreadOdds),
+    t: dk.overUnder != null ? parseFloat(dk.overUnder) : 0,
+    ml: hto.moneyLine != null ? Math.round(parseFloat(hto.moneyLine)) : 0,
+    fromDK: true,
+  };
+}
+
+// Fetch the DK board (+ game list + final scores) from the free ESPN scoreboard.
+// groups=50 is REQUIRED to get all of D1. Returns the same {lines, games} shape as
+// fetchCoversLines so the downstream matching/parse is unchanged.
+let lastEspnScores = {};
+async function fetchEspnDK() {
+  const lines = {}, games = {}, scores = {};
+  const ymd = d => `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+  const dates = [];
+  for (let i = 0; i <= 4; i++) dates.push(ymd(new Date(Date.now() + i * 86400000)));
+  const base = 'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard';
+  const fetchDate = async (date) => {
+    try {
+      const j = await espnGet(`${base}?dates=${date}&groups=50&limit=400`);
+      (j.events || []).forEach(e => {
+        const comp = e.competitions && e.competitions[0];
+        if (!comp) return;
+        const cs = comp.competitors || [];
+        const h = cs.find(x => x.homeAway === 'home'), a = cs.find(x => x.homeAway === 'away');
+        const home = (h && h.team && h.team.displayName) || '', away = (a && a.team && a.team.displayName) || '';
+        if (!home || !away) return;
+        const key = normalizeTeamKey(away) + '@' + normalizeTeamKey(home);
+        games[key] = { away, home, time: e.date };
+        const dk = extractDK(comp);
+        if (dk) lines[key] = dk;
+        if (comp.status && comp.status.type && comp.status.type.completed) {
+          const hs = parseFloat(h.score), as = parseFloat(a.score);
+          if (isFinite(hs) && isFinite(as)) scores[key] = { home, away, homeScore: hs, awayScore: as, completed: true };
+        }
+      });
+    } catch(e) { /* non-fatal per date */ }
+  };
+  await Promise.all(dates.map(fetchDate));
+  lastEspnScores = scores;
+  return { lines, games, scores };
 }
 
 async function fetchCoversLines() {
@@ -2753,14 +2830,17 @@ function parseApiResponse(data, coversLines = {}) {
     // fromPool: true if the coversLine came from remappedPool (passed as coversLines when pool active)
     const isFromPool = !!coversLine && !!coversLine.sj && coversLines[coversKey]?.fromPool !== false
       && (Object.keys(poolLinesCache).length > 0);
+    const isFromDK = !!(coversLine && coversLine.fromDK);
     books['covers'] = {
       s:             activeLine ? activeLine.s    : null,
       sRaw:          activeLine ? (activeLine.sRaw ?? activeLine.s) : null,
       sj:            activeLine ? activeLine.sj   : -110,
-      t:             avg(Object.values(books).map(b=>b.t).filter(v => v != null)),
+      sjOpp:         activeLine ? (activeLine.sjOpp ?? null) : null,
+      t:             (activeLine && activeLine.t) ? activeLine.t : avg(Object.values(books).map(b=>b.t).filter(v => v != null)),
       tj:            -110,
-      ml:            Math.round(avg(Object.values(books).map(b=>b.ml).filter(v => v != null)) || 0),
-      fromScraper:   !!coversLine && !isFromPool,
+      ml:            (activeLine && activeLine.ml) ? activeLine.ml : Math.round(avg(Object.values(books).map(b=>b.ml).filter(v => v != null)) || 0),
+      fromDK:        isFromDK,
+      fromScraper:   !!coversLine && !isFromPool && !isFromDK,
       fromPool:      isFromPool,
       fromConsensus: !coversLine && !!fallbackLine,
     };
@@ -2847,8 +2927,9 @@ function renderTable() {
   // Check if any game has a real Covers scraped line vs fallback consensus
   const hasAnyCoversScraped = games.some(g => g.books.covers?.fromScraper);
   const hasAnyPool = games.some(g => g.books.covers?.fromPool);
-  const coversColLabel = hasAnyPool ? 'POOL LINE' : hasAnyCoversScraped ? 'COVERS' : 'MKT LINE';
-  const coversColNote  = hasAnyPool ? 'pool · stale' : hasAnyCoversScraped ? 'consensus' : 'mkt median';
+  const hasAnyDK = games.some(g => g.books.covers?.fromDK);
+  const coversColLabel = hasAnyDK ? 'DK · GRADING' : hasAnyPool ? 'POOL LINE' : hasAnyCoversScraped ? 'COVERS' : 'MKT LINE';
+  const coversColNote  = hasAnyDK ? 'ESPN · you\'re graded here' : hasAnyPool ? 'pool · stale' : hasAnyCoversScraped ? 'consensus' : 'mkt median';
 
   let html = `
   <div class="table-scroll">
@@ -2858,7 +2939,7 @@ function renderTable() {
       <th style="text-align:left">MATCHUP<br><small style="font-weight:400;opacity:.6">fav spread shown</small></th>
       ${availBooks.map(b => `<th colspan="1" ${b.ref?'class="covers-col"':''}  style="vertical-align:bottom;padding-bottom:6px">
         <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-          ${getBookBadge(b.key, 26)}
+          ${getBookBadge(b.ref && hasAnyDK ? 'draftkings' : b.key, 26)}
           <span style="font-size:0.58rem;letter-spacing:0.1em">${b.ref ? coversColLabel : b.label}</span>
           <small style="font-weight:400;opacity:.6;font-size:0.5rem">${b.ref ? coversColNote : (viewMode==='juice' && !b.ref ? 'juice @ cvr' : b.note)}</small>
         </div>
@@ -3147,7 +3228,7 @@ function renderTopPicks(games) {
           <span class="tp-vs">${abbrev(g.away)} @ ${abbrev(g.home)} · <span class="tp-time">${when} ET</span>${bb ? ` · best: <b style="color:var(--ink)">${bookNm} ${sign(bb.s * e.dispSign)}</b> (${bb.sj > 0 ? '+' : ''}${bb.sj})` : ''}</span>
         </div>
       </div>
-      <div class="tp-line">Covers <b>${sign(pickLine)}</b>${refLine != null ? `<br>${e.refLabel} <b>${sign(refLine)}</b>` : ''}</div>
+      <div class="tp-line">${g.books.covers?.fromDK ? 'DK' : g.books.covers?.fromPool ? 'Pool' : 'Covers'} <b>${sign(pickLine)}</b>${refLine != null ? `<br>${e.refLabel} <b>${sign(refLine)}</b>` : ''}</div>
       <div class="tp-edge" style="${flag ? '' : 'color:var(--soft)'}">+${e.edge.toFixed(1)}</div>
     </div>`;
   }).join('');
@@ -3165,6 +3246,23 @@ function setEdgeMode(mode) {
   edgeMode = mode;
   syncVigK();
   if (allGames.length) renderTable();
+}
+
+// Reference-line source toggle: DK (ESPN, auto) vs Covers (scrape/pool-paste fallback).
+function setRefSource(src) {
+  refSource = (src === 'covers') ? 'covers' : 'dk';
+  try { localStorage.setItem('coversedge-refsource', refSource); } catch(e) {}
+  syncRefSource();
+  // Changing the reference means a different line entirely — re-fetch live data.
+  if (isLiveMode) { fetchLiveData(); }
+  else { showToast('Reference set to ' + (refSource === 'dk' ? 'DK (ESPN)' : 'Covers') + ' — click Fetch Lines', 'success'); }
+}
+function syncRefSource() {
+  const sel = document.getElementById('ref-source');
+  if (sel) sel.value = refSource;
+  // The ⚡ Pool Lines paste bar only matters in Covers mode; DK is auto-fetched.
+  const poolBar = document.getElementById('pool-bar');
+  if (poolBar) poolBar.style.display = (refSource === 'covers') ? '' : 'none';
 }
 
 // Vig-sensitivity calibration: only meaningful for the true-line mode.
@@ -3923,7 +4021,7 @@ function renderMobileCards(games, availBooks) {
         </div>
         <div class="game-card-covers" style="background:${coversBg}">
           <div class="cvr-num" style="color:${coversClr}">${coversLabel}</div>
-          <div class="cvr-label" style="color:${coversClr}">${game.books.covers?.fromPool ? 'Pool' : game.books.covers?.fromConsensus ? 'Mkt Est' : 'Covers'}</div>
+          <div class="cvr-label" style="color:${coversClr}">${game.books.covers?.fromDK ? 'DK' : game.books.covers?.fromPool ? 'Pool' : game.books.covers?.fromConsensus ? 'Mkt Est' : 'Covers'}</div>
           ${hasEdge ? `<div class="cvr-edge" style="color:${coversClr}">+${coversEdge.toFixed(1)} edge</div>` : ''}
         </div>
       </div>
@@ -4257,6 +4355,8 @@ function cacheBoard() {
 
 // Sync the vig-sensitivity control to the saved calibration and current mode.
 syncVigK();
+// Sync the reference-source toggle and pool-bar visibility.
+syncRefSource();
 // Show any tracked-pick record restored from a prior session.
 renderRecord();
 
