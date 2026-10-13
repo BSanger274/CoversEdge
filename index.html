@@ -1222,14 +1222,20 @@ body.dark .covers-edge-text { color: #ffffff !important; }
     </div>
     <div class="help-body">
 
-      <div class="help-note" style="margin-bottom:14px;color:var(--ink)"><b>The idea:</b> you're graded against <b>DraftKings</b> (The Hook's grading line, pulled from ESPN). This tool overlays the <b>sharp market</b> on top of DK and flags where DK is soft — so you lock the stale number before it moves. Your edge = how far DK sits from the sharp true line. <i>(Reference defaults to DK; the <b>Reference ▾</b> toggle flips to Covers if you ever need the old source.)</i></div>
+      <div class="help-note" style="margin-bottom:12px;color:var(--ink)"><b>The idea:</b> you're graded against <b>DraftKings</b> (The Hook's grading line, pulled from ESPN). This tool overlays the <b>sharp market</b> on DK and flags where DK is soft — so you lock the stale number before it moves. Your edge = how far DK sits from the sharp true line.</div>
 
-      <h3>① When you open the site (each session)</h3>
+      <div class="help-note" style="margin-bottom:14px;border-color:var(--gold);background:rgba(232,184,75,0.1)"><b>📅 Season starts Nov 9.</b> Until games are on the slate the board is empty — that's normal. DK lines appear on ESPN roughly a day or two before each game, so there's nothing to fetch until then.</div>
+
+      <h3>① Your game-day routine (once lines are live)</h3>
       <ol>
-        <li>Your key is saved and the <b>last board shows instantly</b> — no API call, no credits.</li>
-        <li>Click <b>⬇ Fetch Lines</b> once to pull today's fresh sportsbook lines. It re-ranks by biggest edge. <i>(This is the only thing that spends credits.)</i></li>
-        <li>Read the <b>🎯 Top Picks This Week</b> panel — your ballot, ranked by edge, each with the best book to bet it at.</li>
+        <li><b>Open CoversEdge and click ⬇ Fetch Lines.</b> It pulls DK (ESPN) + the sharp books and ranks every game by edge. <i>(The only thing that spends credits — ~12 of your 500.)</i></li>
+        <li><b>Read 🎯 Top Picks This Week</b> — the DK lines that are softest vs the sharp market, i.e. your best value, top-down.</li>
+        <li><b>Act on the flags first.</b> A <b style="color:var(--accent)">⚡</b> (juice leaning) or <b style="color:var(--accent)">📈</b> (steaming) means DK is about to move — that soft number won't last, so lock those <b>now</b>.</li>
+        <li><b>Go to <a href="https://picks-pool-ten.vercel.app/" target="_blank" rel="noopener">The Hook ↗</a> and lock your picks</b> at the DK board. CoversEdge just tells you which to take; The Hook is where you submit.</li>
+        <li><b>Fill out your 25</b> by descending edge — for thin/no-edge games, take the side the sharp market leans, even slightly.</li>
+        <li><b>After games finish</b>, come back → <b>📊 My Record → ↻ Grade results</b> to score them.</li>
       </ol>
+      <div class="help-note"><b>Timing matters now.</b> Grading against DK is tight, so edges are small and fleeting — a line that's soft at noon can be gone by tip. Check close to when you'll lock, and grab the ⚡/📈 ones fast. Your saved board also shows instantly on open (no credits) so you can glance anytime.</div>
 
       <h3>② The reference line (DK — automatic)</h3>
       <p style="font-size:0.7rem;color:var(--soft);line-height:1.6;margin-bottom:6px">Nothing to load. By default the <b>reference column is DraftKings, pulled from ESPN</b> — the same line The Hook grades you on. It loads with every Fetch Lines. Confirm the column header reads <b>DK · GRADING</b> and the status says <b>“Live · DK (ESPN) + sharps.”</b></p>
@@ -1244,7 +1250,7 @@ body.dark .covers-edge-text { color: #ffffff !important; }
       </ul>
 
       <h3>Reading the board</h3>
-      <div class="help-legend-row"><span class="help-sw" style="background:rgba(45,122,69,0.3);border:1px solid var(--green)"></span> Green = your pool/Covers line beats the sharp benchmark (your edge)</div>
+      <div class="help-legend-row"><span class="help-sw" style="background:rgba(45,122,69,0.3);border:1px solid var(--green)"></span> Green = the DK (grading) line beats the sharp benchmark (your edge)</div>
       <div class="help-legend-row"><span class="help-sw" style="background:rgba(30,80,160,0.12);border:2px solid #1a50a0"></span> Blue outline = best book to actually bet it (most points)</div>
       <div class="help-legend-row"><span style="color:var(--accent);font-weight:700">⚡</span>&nbsp;Juice leaning — sharp vig says the number is about to move; grab it first</div>
       <div class="help-legend-row"><span style="color:var(--accent);font-weight:700">📈</span>&nbsp;Steaming — sharp juice got heavier since your last refresh</div>
@@ -1252,7 +1258,7 @@ body.dark .covers-edge-text { color: #ffffff !important; }
 
       <h3>Tracking your results</h3>
       <ul>
-        <li>Every Fetch Lines <b>saves your recommended pick</b> for each game. After games finish, open <b>📊 My Record</b> and click <b>↻ Grade results</b> — it pulls final scores and marks each pick ✓/✗ against your pool line.</li>
+        <li>Every Fetch Lines <b>saves your recommended pick</b> for each game. After games finish, open <b>📊 My Record</b> and click <b>↻ Grade results</b> — it pulls final scores and marks each pick ✓/✗ against the DK line you were shown.</li>
         <li>You get your <b>season & weekly ATS record</b> plus <b>hit-rate by edge size</b> — so you learn which signals actually win and can tune the vig slider to what's worked.</li>
         <li><b>Click any team name</b> to see its games: your picks (result + covered), home/away, and recent form.</li>
       </ul>
