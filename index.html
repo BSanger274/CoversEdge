@@ -1831,6 +1831,23 @@ async function fetchLiveData() {
       const coversAvailable = coversKeys.size > 0;
 
       const merged = mergeRegions(usData, euData);
+
+      // Re-orient Odds API games to the reference's home/away. Neutral-site & early-season
+      // games often disagree on who is "home" between ESPN (DK) and the Odds API, which
+      // would flip the spread sign and break matching. Anchor on the reference orientation.
+      if (coversAvailable) {
+        const pairToRef = {};
+        Object.values(coversGames).forEach(g => {
+          pairToRef[[normalizeTeamKey(g.away), normalizeTeamKey(g.home)].sort().join('|')] = g;
+        });
+        merged.forEach(g => {
+          const ref = pairToRef[[normalizeTeamKey(g.away_team), normalizeTeamKey(g.home_team)].sort().join('|')];
+          if (ref && normalizeTeamKey(g.home_team) !== normalizeTeamKey(ref.home)) {
+            const t = g.home_team; g.home_team = g.away_team; g.away_team = t; // swap → parseApiResponse reads the right outcome
+          }
+        });
+      }
+
       const filteredMerged = coversAvailable
         ? merged.filter(g => coversKeys.has(normalizeTeamKey(g.away_team) + '@' + normalizeTeamKey(g.home_team)))
         : merged;
@@ -1838,7 +1855,9 @@ async function fetchLiveData() {
       const oddsGameKeys = new Set(filteredMerged.map(g =>
         normalizeTeamKey(g.away_team) + '@' + normalizeTeamKey(g.home_team)
       ));
-      const noOddsEvents = allEvents
+      // In DK mode ESPN is the authoritative game list, so skip the Odds API /events
+      // games (their orientation can differ → duplicate rows). Covers mode still uses them.
+      const noOddsEvents = (refSource === 'dk') ? [] : allEvents
         .filter(e => {
           const k = normalizeTeamKey(e.away_team) + '@' + normalizeTeamKey(e.home_team);
           return (!coversAvailable || coversKeys.has(k)) && !oddsGameKeys.has(k);
