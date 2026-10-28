@@ -1183,7 +1183,7 @@ body.dark .covers-edge-text { color: #ffffff !important; }
 
 <!-- LEGEND -->
 <div class="legend">
-  <div class="legend-item"><div class="swatch sw-covers"></div><span>Covers (reference line)</span></div>
+  <div class="legend-item"><div class="swatch sw-covers"></div><span>DK · grading line (your reference)</span></div>
   <div class="legend-item">
     <div style="display:flex;gap:3px">
       <div class="swatch" style="background:rgba(45,180,90,0.20);border:1px solid #2d7a45"></div>
@@ -1191,13 +1191,13 @@ body.dark .covers-edge-text { color: #ffffff !important; }
       <div class="swatch" style="background:rgba(35,150,65,0.65);border:1px solid #2d7a45"></div>
       <div class="swatch" style="background:rgba(30,135,55,0.83);border:1px solid #2d7a45"></div>
     </div>
-    <span>Your edge: +0.5 → +1.0 → +1.5 → +2.0+ pts (Covers vs the sharp benchmark)</span>
+    <span>Your edge: +0.5 → +1.0 → +1.5 → +2.0+ pts (grading line vs the sharp benchmark)</span>
   </div>
   <div class="legend-item"><div class="swatch" style="background:rgba(30,80,160,0.12);border:2px solid #1a50a0;"></div><span>Best book (most points for bettor)</span></div>
-  <div class="legend-item"><div class="swatch sw-flag"></div><span>Gap vs Covers exceeds threshold</span></div>
-  <div class="legend-item"><span style="color:var(--accent);font-weight:700">⚡</span>&nbsp;<span>Juice leaning — sharp vig implies the line is about to move (grab Covers first)</span></div>
+  <div class="legend-item"><div class="swatch sw-flag"></div><span>Gap vs grading line exceeds threshold</span></div>
+  <div class="legend-item"><span style="color:var(--accent);font-weight:700">⚡</span>&nbsp;<span>Juice leaning — sharp vig implies the line is about to move (grab it first)</span></div>
   <div class="legend-item"><span style="color:#2d7a45;font-weight:700;font-size:0.8rem">▼</span>&nbsp;<span>Line moved down (better)</span>&nbsp;&nbsp;<span style="color:#c0392b;font-weight:700;font-size:0.8rem">▲</span>&nbsp;<span>Line moved up (worse) since last refresh</span></div>
-  <div class="legend-item" style="margin-left:auto">Spread mode: favorite's line shown · Juice mode: cost to bet the Covers line at each book</div>
+  <div class="legend-item" style="margin-left:auto">Spread mode: favorite's line shown · Juice mode: cost to bet the grading line at each book</div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -3023,7 +3023,7 @@ function renderTable() {
             </div>
             <div>
               <div class="matchup"><span class="team-clickable" onclick="event.stopPropagation();openTeamPopup('${jsq(game.away)}')">${abbrev(game.away)}</span><br><span style="opacity:.4;font-size:.7em">@</span> <span class="team-clickable" onclick="event.stopPropagation();openTeamPopup('${jsq(game.home)}')">${abbrev(game.home)}</span></div>
-              <span style="font-size:0.58rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--green);font-weight:700;font-family:'Syne',sans-serif;">${coversEdge >= 0.5 ? '★ PICK' : 'LINE'}: ${abbrev(displayTeam)}${coversEdge >= 0.5 ? ` +${coversEdge.toFixed(1)} <span style="opacity:.7;font-weight:400">${E.refLabel}</span>` : ''}</span>${E.vigLean >= 0.3 ? `<br><span style="font-size:0.54rem;letter-spacing:0.06em;text-transform:uppercase;color:var(--accent);font-weight:700;font-family:'IBM Plex Mono',monospace;" title="Sharp vig implies the number is about to move — grab Covers first">⚡ juice leaning +${E.vigLean.toFixed(1)}</span>` : ''}${steam >= 15 ? `<br><span style="font-size:0.54rem;letter-spacing:0.06em;text-transform:uppercase;color:var(--accent);font-weight:700;font-family:'IBM Plex Mono',monospace;" title="Sharp juice got heavier since your last refresh — the line is steaming">📈 steaming</span>` : ''}
+              <span style="font-size:0.58rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--green);font-weight:700;font-family:'Syne',sans-serif;">${coversEdge >= 0.5 ? '★ PICK' : 'LINE'}: ${abbrev(displayTeam)}${coversEdge >= 0.5 ? ` +${coversEdge.toFixed(1)} <span style="opacity:.7;font-weight:400">${E.refLabel}</span>` : ''}</span>${E.vigLean >= 0.3 ? `<br><span style="font-size:0.54rem;letter-spacing:0.06em;text-transform:uppercase;color:var(--accent);font-weight:700;font-family:'IBM Plex Mono',monospace;" title="Sharp vig implies the number is about to move — grab it first">⚡ juice leaning +${E.vigLean.toFixed(1)}</span>` : ''}${steam >= 15 ? `<br><span style="font-size:0.54rem;letter-spacing:0.06em;text-transform:uppercase;color:var(--accent);font-weight:700;font-family:'IBM Plex Mono',monospace;" title="Sharp juice got heavier since your last refresh — the line is steaming">📈 steaming</span>` : ''}
             </div>
           </div>
           <span class="game-time-tag">${timeStr}</span>
