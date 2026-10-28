@@ -1132,8 +1132,8 @@ body.dark .covers-edge-text { color: #ffffff !important; }
       View:
       <select id="view-mode" onchange="setViewMode(this.value)"
         style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;background:var(--paper);color:var(--ink);border:1px solid var(--line);padding:4px 8px;letter-spacing:0.06em;cursor:pointer;outline:none;accent-color:var(--accent);">
-        <option value="spread">Spread vs Covers</option>
-        <option value="juice">Juice at Covers Line</option>
+        <option value="spread">Spread vs DK</option>
+        <option value="juice">Juice at DK Line</option>
       </select>
     </div>
   </div>
@@ -2947,7 +2947,7 @@ function renderTable() {
         <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
           ${getBookBadge(b.ref && hasAnyDK ? 'draftkings' : b.key, 26)}
           <span style="font-size:0.58rem;letter-spacing:0.1em">${b.ref ? coversColLabel : b.label}</span>
-          <small style="font-weight:400;opacity:.6;font-size:0.5rem">${b.ref ? coversColNote : (viewMode==='juice' && !b.ref ? 'juice @ cvr' : b.note)}</small>
+          <small style="font-weight:400;opacity:.6;font-size:0.5rem">${b.ref ? coversColNote : (viewMode==='juice' && !b.ref ? ('juice @ ' + (hasAnyDK ? 'DK' : hasAnyPool ? 'pool' : 'ref')) : b.note)}</small>
         </div>
       </th>`).join('')}
     </tr>
@@ -3269,6 +3269,13 @@ function syncRefSource() {
   // The ⚡ Pool Lines paste bar only matters in Covers mode; DK is auto-fetched.
   const poolBar = document.getElementById('pool-bar');
   if (poolBar) poolBar.style.display = (refSource === 'covers') ? '' : 'none';
+  // Keep the View dropdown labels pointing at whatever the reference actually is.
+  const vm = document.getElementById('view-mode');
+  if (vm && vm.options.length >= 2) {
+    const r = refSource === 'dk' ? 'DK' : 'Covers';
+    vm.options[0].text = 'Spread vs ' + r;
+    vm.options[1].text = 'Juice at ' + r + ' Line';
+  }
 }
 
 // Vig-sensitivity calibration: only meaningful for the true-line mode.
