@@ -3636,9 +3636,11 @@ function openTeamPopup(teamName) {
         cover = `<span class="tm-cover ${badge}">${txt}</span>`;
       }
       const poolDisp = (p.poolLine * (home ? 1 : -1));
+      const proj = (p.edge >= 0.5) ? projectedCover(p.edge) : null;
+      const projStr = proj ? ` · <b style="color:${proj.pct>=54?'var(--green)':proj.pct>=50?'var(--gold)':'var(--red)'}">~${proj.pct}%</b>` : '';
       return `<div class="tm-row">
         <div class="tm-when">${new Date(p.tip).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
-        <div class="tm-game"><b>${loc} ${abbrev(opp)}</b><br><span class="tm-sub">pool ${sign(poolDisp)} · ${picked ? 'you picked ' + abbrev(teamName) : 'pick was ' + abbrev(p.pickTeam)}</span></div>
+        <div class="tm-game"><b>${loc} ${abbrev(opp)}</b><br><span class="tm-sub">pool ${sign(poolDisp)} · ${picked ? 'you picked ' + abbrev(teamName) : 'pick was ' + abbrev(p.pickTeam)}${projStr}</span></div>
         <div class="tm-res">${score}<br>${cover}</div>
       </div>`;
     }).join('');
