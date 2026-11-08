@@ -3172,6 +3172,10 @@ function renderTable() {
 
     // ── Expandable detail row ──
     const gameIdForHistory = game.id || (game.away + '@' + game.home);
+    // Show history in the SAME orientation as the board — the pick side (dispSign) —
+    // so a board value of +1.5 for the pick doesn't read as -1.5 (the home-team number).
+    const ds = dispSign || 1;
+    const fmt = v => (v > 0 ? '+' : '') + v;
     let histHtml = '<div class="history-grid">';
     availBooks.forEach(b => {
       const hist = lineHistory[gameIdForHistory + '|' + b.key] || [];
@@ -3180,15 +3184,15 @@ function renderTable() {
       histHtml += '<div class="history-book-name" style="display:flex;align-items:center;gap:5px">' + getBookBadge(b.key, 20) + b.label + '</div>';
       histHtml += '<div class="history-entries">';
       if (hist.length === 0 && game.books[b.key]) {
-        const s = game.books[b.key].s;
-        histHtml += '<div class="history-entry h-current"><span class="h-time">now</span><span class="h-val">' + (s > 0 ? '+' : '') + s + '</span></div>';
+        histHtml += '<div class="history-entry h-current"><span class="h-time">now</span><span class="h-val">' + fmt(game.books[b.key].s * ds) + '</span></div>';
       } else {
         hist.forEach((h, hi) => {
           const isCurrent = hi === hist.length - 1;
-          const prevS = hi > 0 ? hist[hi-1].s : null;
-          const moveClass = prevS === null ? '' : (h.s < prevS ? ' h-moved-better' : h.s > prevS ? ' h-moved-worse' : '');
+          const dv = h.s * ds, prevDv = hi > 0 ? hist[hi-1].s * ds : null;
+          // more points for the pick side = better (green); fewer = worse (red)
+          const moveClass = prevDv === null ? '' : (dv > prevDv ? ' h-moved-better' : dv < prevDv ? ' h-moved-worse' : '');
           const cls = isCurrent ? 'h-current' + moveClass : 'h-open' + moveClass;
-          histHtml += '<div class="history-entry ' + cls + '"><span class="h-time">' + h.time + '</span><span class="h-val">' + (h.s > 0 ? '+' : '') + h.s + '</span></div>';
+          histHtml += '<div class="history-entry ' + cls + '"><span class="h-time">' + h.time + '</span><span class="h-val">' + fmt(dv) + '</span></div>';
         });
       }
       histHtml += '</div></div>';
@@ -3197,7 +3201,7 @@ function renderTable() {
 
     html += '<tr class="detail-row" id="' + rowId + '">' +
       '<td colspan="99"><div class="detail-panel">' +
-      '<div class="detail-title">Line History — ' + abbrev(game.away) + ' @ ' + abbrev(game.home) + '</div>' +
+      '<div class="detail-title">Line History — shown for ' + abbrev(displayTeam) + ' (' + abbrev(game.away) + ' @ ' + abbrev(game.home) + ')</div>' +
       histHtml + '</div></td></tr>';
 
     html += gi < games.length-1 ? '<tr class="group-sep"><td colspan="99"></td></tr>' : '';
