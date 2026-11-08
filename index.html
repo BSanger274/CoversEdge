@@ -4289,10 +4289,20 @@ function abbrev(name) {
     'Mastodons','Midshipmen','Mavericks','Monks','Nanooks','Nittany Lions',
     'Nor\'easters','Penmen','Pilots','Privateers','Quakers','River Hawks',
     'Running Eagles','Seawolves','Skyhooks','Stags','Thunderbirds','Toreros',
-    'Tritons','Turtles','Waves','Warhawks','Zips'];
+    'Tritons','Turtles','Waves','Warhawks','Zips',
+    // additions / fixes
+    'Black Bears','Red Foxes','Pioneers','Lions','Rebels','Gators','Utes','Dukes','Dons',
+    'Hatters','Leopards','Camels','Bonnies','Explorers','Billikens','Minutemen','Dolphins',
+    'Chanticleers','Jackrabbits','Coyotes','Bulls','Mustangs','Gamecocks','Lobos','Mocs',
+    'Hoyas','Orange','Keydets','Royals','Bearcats','Blazers','Bisons','Tribe','Islanders',
+    'Anteaters','Matadors','Vandals','Bengals','Demons','Lancers','Peacocks','Aces','Crusaders',
+    'Golden Bears','Golden Lions','Golden Griffins','Horned Frogs','Red Raiders','Red Wolves',
+    'Thundering Herd','Mountain Hawks','Fighting Camels','Blue Hose','Purple Eagles','Purple Aces',
+    'Great Danes','Golden Panthers','Delta Devils','Runnin\' Bulldogs'];
 
-  // Try to strip the nickname from the end
-  for (const nick of nicknames) {
+  // Strip the mascot from the end. Check LONGEST nicknames first so a multi-word mascot
+  // like "Black Bears" wins over the single word "Bears" ("Maine Black Bears" → "Maine").
+  for (const nick of [...nicknames].sort((a, b) => b.length - a.length)) {
     if (name.endsWith(' ' + nick)) {
       const school = name.slice(0, name.length - nick.length - 1).trim();
       if (school.length > 0) return school;
