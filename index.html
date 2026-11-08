@@ -1232,8 +1232,13 @@ body.dark .covers-edge-text { color: #ffffff !important; }
       <h3>Where your edge lives</h3>
       <p style="font-size:0.74rem;color:var(--ink);line-height:1.6">Your record split by <b>favorites vs underdogs</b>, <b>home vs away</b>, and the <b>⚡ juice-lean / 📈 steaming</b> flags — each with win % and avg CLV. Over the season this shows which kinds of picks actually work for you. (Small samples early on — don't over-read a 2-0.)</p>
 
-      <h3>Confidence tags on Top Picks</h3>
-      <p style="font-size:0.74rem;color:var(--ink);line-height:1.6">The little <b>"8-4 · 66.7%"</b> badge on a pick is your season record on picks in <i>that edge range</i>. It only appears once you've graded <b>10+</b> games in that range, so it stays blank until the number means something.</p>
+      <h3>Projected cover % on Top Picks</h3>
+      <p style="font-size:0.74rem;color:var(--ink);line-height:1.6">The <b>"~56% cover"</b> badge on a pick is your edge <b>calibrated into a win probability</b> from how picks in <i>that edge range</i> have actually resolved for you. It's separate from the edge — the edge is the market signal; this is your track record translated into a %.</p>
+      <ul>
+        <li>It's <b>regularized toward 50%</b> by a pseudo-count, so a hot 7-2 stretch won't read as "78%" — it shrinks until the sample backs it up.</li>
+        <li>It only appears once you've graded <b>10+</b> games in that edge range, so it stays blank until it means something (expect that around mid-season).</li>
+        <li>Hover it to see the raw record it's built from.</li>
+      </ul>
 
       <div class="help-note"><b>Grade results</b> pulls final scores and scores the recommended picks. One grade run ≈ 2 Odds API credits.</div>
     </div>
@@ -3296,10 +3301,11 @@ function renderTopPicks(games) {
     const bb = bestBookForPick(g, e.dispSign);
     const bookNm = bb ? (BOOK_BRAND[bb.key]?.full || bb.label) : null;
     const steam = sharpSteaming(g, e.dispSign);
-    // Confidence tag: your historical record on picks in this edge range (only once there's real sample).
-    const pr = profileRecord(e.edge);
-    const conf = (pr && (pr.w + pr.l) >= 10)
-      ? ` <span style="font-size:0.54rem;font-weight:700;padding:1px 5px;border-radius:2px;background:${pr.pct>=55?'rgba(45,122,69,0.16)':pr.pct>=50?'rgba(154,123,18,0.16)':'rgba(192,57,43,0.14)'};color:${pr.pct>=55?'var(--green)':pr.pct>=50?'var(--gold)':'var(--red)'}" title="Your record on picks in this edge range this season">${pr.w}-${pr.l} · ${pr.pct}%</span>`
+    // Projected cover %: your edge calibrated into a win probability from graded history
+    // (shrunk toward 50%). Appears only once the bucket has real sample; raw record in the tooltip.
+    const proj = projectedCover(e.edge);
+    const conf = proj
+      ? ` <span style="font-size:0.54rem;font-weight:700;padding:1px 5px;border-radius:2px;background:${proj.pct>=54?'rgba(45,122,69,0.16)':proj.pct>=50?'rgba(154,123,18,0.16)':'rgba(192,57,43,0.14)'};color:${proj.pct>=54?'var(--green)':proj.pct>=50?'var(--gold)':'var(--red)'}" title="Projected ATS cover %, calibrated from your record on picks in this edge range (${proj.raw.w}-${proj.raw.l}, ${proj.raw.pct}%), regularized toward 50%">~${proj.pct}% cover</span>`
       : '';
     return `<div class="tp-row">
       <div class="tp-rank">${i + 1}</div>
@@ -3508,6 +3514,19 @@ function profileRecord(edge) {
   if (!b) return null;
   const t = tally(Object.values(trackedPicks).filter(p => p.result && p.result.final && p.edge >= b.min && p.edge < b.max));
   t.bucket = b.lbl; return t;
+}
+
+// Projected cover %: calibrate the edge into a win probability from YOUR graded results,
+// shrunk toward 50% by a pseudo-count so a small sample can't produce a wild number.
+// Returns null until there's enough to say anything (≥ 10 decided in the bucket).
+const PROJ_K = 15, PROJ_PRIOR = 0.5;
+function projectedCover(edge) {
+  const pr = profileRecord(edge);
+  if (!pr) return null;
+  const decided = pr.w + pr.l;
+  if (decided < 10) return null;
+  const prob = (pr.w + PROJ_K * PROJ_PRIOR) / (decided + PROJ_K);
+  return { pct: Math.round(prob * 1000) / 10, raw: pr, n: decided };
 }
 
 function renderRecord() {
