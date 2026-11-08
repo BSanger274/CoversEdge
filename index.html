@@ -1436,6 +1436,11 @@ function medianOf(arr) {
   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 }
 
+// A real spread's juice sits near -110 and never past a few hundred cents. Exchanges
+// (Novig/ProphetX) return placeholder lines at the empty edge of a thin order book with
+// absurd prices (e.g. -9900, -100000) and a point nowhere near the market — reject those.
+function sanePrice(p) { return p == null || Math.abs(p) <= 1500; }
+
 // A book's vig-implied "true" line in home-team terms. Heavy favorite juice (e.g. home
 // -10 at -160) pushes the true line past -10 toward -10.5; cheap/plus juice pulls it back.
 function trueLineHome(s, sj, sjOpp) {
@@ -2787,6 +2792,7 @@ function parseApiResponse(data, coversLines = {}) {
       const collectOutcomes = (mkt) => {
         mkt?.outcomes?.forEach(o => {
           if (o.point === undefined) return;
+          if (!sanePrice(o.price)) return; // drop placeholder exchange rungs with absurd prices
           const pt = +(o.point).toFixed(1);
           if (o.name === event.home_team) {
             allLines[String(pt)] = o.price ?? -110;
@@ -2805,7 +2811,9 @@ function parseApiResponse(data, coversLines = {}) {
       // In that case fall back to buildAllLines which covers ±8 steps from primary.
       const hasRealAltLines = Object.keys(allLines).length > 2;
 
-      if (homeSpread) {
+      // Reject the book's line entirely when its primary spread price is absurd — that's
+      // a no-liquidity placeholder (common on Novig/ProphetX), not a real market line.
+      if (homeSpread && sanePrice(homeSpread.price)) {
         // If API returned alternate spreads, use them; otherwise build a simulated menu
         const finalAllLines = hasRealAltLines
           ? allLines
@@ -2814,7 +2822,7 @@ function parseApiResponse(data, coversLines = {}) {
         books[mapped] = {
           s:       homeSpread.point,
           sj:      homeSpread.price ?? -110,
-          sjOpp:   awaySpread?.price ?? null, // away-side price at the primary line, for no-vig true line
+          sjOpp:   sanePrice(awaySpread?.price) ? (awaySpread?.price ?? null) : null, // away price for no-vig (sane only)
           t:       overTotal?.point ?? 0,
           tj:      overTotal?.price ?? -110,
           ml:      homeML?.price ?? 0,
