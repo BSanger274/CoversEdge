@@ -1152,6 +1152,7 @@ body.dark .covers-edge-text { color: #ffffff !important; }
       📊 My Record <span id="record-count" style="opacity:0.7;font-weight:400;"></span>
     </span>
     <div style="display:flex;align-items:center;gap:10px;">
+      <button onclick="toggleRecordInfo()" title="What do these numbers mean?" aria-label="What do these numbers mean?" style="width:22px;height:22px;border-radius:50%;border:1.5px solid rgba(245,240,232,0.5);background:transparent;color:var(--paper);font-family:'Syne',sans-serif;font-weight:800;font-size:0.72rem;line-height:1;cursor:pointer;flex-shrink:0;">?</button>
       <button id="grade-btn" onclick="gradeResults()" style="padding:5px 12px;background:var(--flag);color:var(--ink);font-family:'Syne',sans-serif;font-weight:700;font-size:0.62rem;letter-spacing:0.08em;text-transform:uppercase;border:none;cursor:pointer;">↻ Grade results</button>
       <span id="record-arrow" style="font-size:0.7rem;cursor:pointer;" onclick="toggleRecord()">▲</span>
     </div>
@@ -1201,6 +1202,43 @@ body.dark .covers-edge-text { color: #ffffff !important; }
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- MY RECORD INFO -->
+<div class="help-overlay" id="record-info-overlay" onclick="if(event.target===this)toggleRecordInfo()">
+  <div class="help-modal">
+    <div class="help-modal-head">
+      <h2>How to read My Record</h2>
+      <button class="help-close" onclick="toggleRecordInfo()" aria-label="Close">✕</button>
+    </div>
+    <div class="help-body">
+      <div class="help-note" style="margin-bottom:14px;color:var(--ink)"><b>What it tracks:</b> every time you Fetch Lines, CoversEdge saves <b>its own recommended side</b> for each game. So this is <i>"how CoversEdge's picks would do"</i> — a scorecard for the tool. It is <b>not</b> reading your actual picks from The Hook. <i>(Your real contest record lives on The Hook.)</i></div>
+
+      <h3>Avg CLV — the number to watch</h3>
+      <p style="font-size:0.74rem;color:var(--ink);line-height:1.6">CLV = <b>Closing Line Value</b>. It compares the DK line when CoversEdge first flagged a game to the line at tip-off (the close).</p>
+      <ul>
+        <li><b style="color:var(--green)">Positive (+) = good.</b> You'd have locked a <b>better number than the close</b> — the market moved toward your side, which means the edge was real. e.g. you took Sacred Heart +1.5 and it closed +1 → <b>+0.5 CLV</b>.</li>
+        <li><b style="color:var(--red)">Negative (−) = bad.</b> The close was a better number than you got — the market moved against your pick.</li>
+        <li><b>"beat close %"</b> = how often your picks had positive CLV.</li>
+      </ul>
+      <p style="font-size:0.7rem;color:var(--soft);line-height:1.6">Why it matters: ATS wins are noisy week-to-week, but CLV tells you whether the process is sound <i>right now</i> — before the record fills in. Pros judge themselves on CLV first.</p>
+
+      <h3>Season ATS / This week / Flagged</h3>
+      <ul>
+        <li><b>Season ATS</b> — overall wins-losses(-pushes) and win % of the recommended picks, graded against the DK line.</li>
+        <li><b>This week</b> — same, for the current Mon-start contest week.</li>
+        <li><b>Flagged</b> — just the stronger picks (edge ≥ 1.5).</li>
+      </ul>
+
+      <h3>Where your edge lives</h3>
+      <p style="font-size:0.74rem;color:var(--ink);line-height:1.6">Your record split by <b>favorites vs underdogs</b>, <b>home vs away</b>, and the <b>⚡ juice-lean / 📈 steaming</b> flags — each with win % and avg CLV. Over the season this shows which kinds of picks actually work for you. (Small samples early on — don't over-read a 2-0.)</p>
+
+      <h3>Confidence tags on Top Picks</h3>
+      <p style="font-size:0.74rem;color:var(--ink);line-height:1.6">The little <b>"8-4 · 66.7%"</b> badge on a pick is your season record on picks in <i>that edge range</i>. It only appears once you've graded <b>10+</b> games in that range, so it stays blank until the number means something.</p>
+
+      <div class="help-note"><b>Grade results</b> pulls final scores and scores the recommended picks. One grade run ≈ 2 Odds API credits.</div>
+    </div>
+  </div>
+</div>
 
 <!-- TEAM POPUP -->
 <div class="help-overlay" id="team-overlay" onclick="if(event.target===this)closeTeamPopup()">
@@ -3538,6 +3576,10 @@ function toggleRecord() {
   body.style.display = open ? '' : 'none';
   arrow.textContent = open ? '▲' : '▼';
 }
+function toggleRecordInfo() {
+  const o = document.getElementById('record-info-overlay');
+  if (o) o.classList.toggle('open');
+}
 
 // ═══════════════════════════════════════════════════
 //  TEAM POPUP — click a school to see its games
@@ -4389,7 +4431,7 @@ function toggleHelp() {
 }
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
-    ['help-overlay', 'team-overlay'].forEach(id => {
+    ['help-overlay', 'team-overlay', 'record-info-overlay'].forEach(id => {
       const o = document.getElementById(id);
       if (o && o.classList.contains('open')) o.classList.remove('open');
     });
