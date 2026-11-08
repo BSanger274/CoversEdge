@@ -3258,10 +3258,15 @@ function renderTopPicks(games) {
     const bb = bestBookForPick(g, e.dispSign);
     const bookNm = bb ? (BOOK_BRAND[bb.key]?.full || bb.label) : null;
     const steam = sharpSteaming(g, e.dispSign);
+    // Confidence tag: your historical record on picks in this edge range (only once there's real sample).
+    const pr = profileRecord(e.edge);
+    const conf = (pr && (pr.w + pr.l) >= 10)
+      ? ` <span style="font-size:0.54rem;font-weight:700;padding:1px 5px;border-radius:2px;background:${pr.pct>=55?'rgba(45,122,69,0.16)':pr.pct>=50?'rgba(154,123,18,0.16)':'rgba(192,57,43,0.14)'};color:${pr.pct>=55?'var(--green)':pr.pct>=50?'var(--gold)':'var(--red)'}" title="Your record on picks in this edge range this season">${pr.w}-${pr.l} · ${pr.pct}%</span>`
+      : '';
     return `<div class="tp-row">
       <div class="tp-rank">${i + 1}</div>
       <div>
-        <div class="tp-pick">${abbrev(e.displayTeam)} ${sign(pickLine)}${e.vigLean >= 0.3 ? ' <span style="color:var(--accent);font-size:0.62rem" title="Sharp juice implies the line is about to move">⚡</span>' : ''}${steam >= 15 ? ' <span style="color:var(--accent);font-size:0.62rem" title="Sharp juice got heavier since your last refresh">📈</span>' : ''}
+        <div class="tp-pick">${abbrev(e.displayTeam)} ${sign(pickLine)}${e.vigLean >= 0.3 ? ' <span style="color:var(--accent);font-size:0.62rem" title="Sharp juice implies the line is about to move">⚡</span>' : ''}${steam >= 15 ? ' <span style="color:var(--accent);font-size:0.62rem" title="Sharp juice got heavier since your last refresh">📈</span>' : ''}${conf}
           <span class="tp-vs">${abbrev(g.away)} @ ${abbrev(g.home)} · <span class="tp-time">${when} ET</span>${bb ? ` · best: <b style="color:var(--ink)">${bookNm} ${sign(bb.s * e.dispSign)}</b> (${bb.sj > 0 ? '+' : ''}${bb.sj})` : ''}</span>
         </div>
       </div>
@@ -3354,12 +3359,20 @@ function snapshotPicks() {
     const key = (g.id || (normalizeTeamKey(g.away) + '@' + normalizeTeamKey(g.home))) + '|' + date;
     const bb = bestBookForPick(g, E.dispSign);
     const prev = trackedPicks[key];
+    const dkS = E.coversSpread; // current DK (grading) line, home-team terms
+    const tipped = Date.now() >= Date.parse(g.time);
+    // openLine = line the FIRST time we saw this game (CLV reference); closeLine keeps
+    // updating to the latest line UNTIL tip-off, then freezes = the true closing line.
+    const openLine = prev && prev.openLine != null ? prev.openLine : dkS;
+    const closeLine = (prev && tipped && prev.closeLine != null) ? prev.closeLine : dkS;
     trackedPicks[key] = {
       date, away: g.away, home: g.home, tip: g.time,
-      poolLine: E.coversSpread, dispSign: E.dispSign, pickTeam: E.displayTeam,
+      poolLine: dkS, dispSign: E.dispSign, pickTeam: E.displayTeam,
       edge: +(E.edge || 0).toFixed(2), mode: edgeMode,
       vigLean: +(E.vigLean || 0).toFixed(2), steam: sharpSteaming(g, E.dispSign),
       bestBook: bb ? { label: bb.label, key: bb.key, s: bb.s, sj: bb.sj } : null,
+      openLine, closeLine,
+      openTime: prev && prev.openTime ? prev.openTime : Date.now(),
       result: prev && prev.result && prev.result.final ? prev.result : null, // keep any grade already earned
     };
   });
@@ -3437,49 +3450,85 @@ function tally(picks) {
 }
 function recTxt(t) { return t.w + '-' + t.l + (t.p ? '-' + t.p : '') + (t.pct != null ? '  ·  ' + t.pct + '%' : ''); }
 
+// Closing Line Value: did the line move to your side after CoversEdge flagged it?
+// + = you locked a better number than the close (the edge was real). Home-team spreads,
+// so (open - close) * dispSign puts it in the pick's perspective.
+function clvOf(p) {
+  if (!p || p.openLine == null || p.closeLine == null || !p.dispSign) return null;
+  return +(((p.openLine - p.closeLine) * p.dispSign)).toFixed(2);
+}
+function avgClv(picks) {
+  const vals = picks.map(clvOf).filter(v => v != null);
+  if (!vals.length) return null;
+  const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+  const beat = vals.filter(v => v > 0.001).length;
+  return { avg: +avg.toFixed(2), n: vals.length, beatPct: Math.round(beat / vals.length * 1000) / 10 };
+}
+// Historical record of graded picks in the same edge bucket — powers confidence tags.
+function profileRecord(edge) {
+  const b = EDGE_BUCKETS.find(b => edge >= b.min && edge < b.max);
+  if (!b) return null;
+  const t = tally(Object.values(trackedPicks).filter(p => p.result && p.result.final && p.edge >= b.min && p.edge < b.max));
+  t.bucket = b.lbl; return t;
+}
+
 function renderRecord() {
   const bar = document.getElementById('record-bar');
   const content = document.getElementById('record-content');
   if (!bar || !content) return;
-  const graded = Object.values(trackedPicks).filter(p => p.result && p.result.final);
-  const tracked = Object.values(trackedPicks).length;
+  const all = Object.values(trackedPicks);
+  const graded = all.filter(p => p.result && p.result.final);
+  const tipped = all.filter(p => Date.now() >= Date.parse(p.tip));
+  const clv = avgClv(tipped);
 
   bar.style.display = '';
   const cntEl = document.getElementById('record-count');
-  if (cntEl) cntEl.textContent = tracked ? '· ' + graded.length + ' of ' + tracked + ' graded' : '';
+  if (cntEl) cntEl.textContent = all.length ? '· ' + graded.length + ' of ' + all.length + ' graded' : '';
 
-  if (!graded.length) {
+  if (!graded.length && !clv) {
     content.innerHTML = '<div style="padding:10px 4px;font-size:0.68rem;color:var(--soft);line-height:1.6">'
-      + (tracked ? tracked + ' picks tracked — click <b>↻ Grade results</b> after games finish to score them against your pool line.'
-                 : 'No picks tracked yet. Fetch lines during the season and your recommended side is saved for each game; grade them after they finish.')
+      + (all.length ? all.length + ' picks tracked — CLV and your record fill in as games tip off and you grade them.'
+                    : 'No picks tracked yet. Fetch lines during the season and your recommended side is saved for each game; grade them after they finish.')
       + '</div>';
     return;
   }
 
   const thisWeek = contestWeekStart(etDate(Date.now()));
-  const weekGraded = graded.filter(p => contestWeekStart(p.date) === thisWeek);
-  const overall = tally(graded), week = tally(weekGraded);
+  const overall = tally(graded), week = tally(graded.filter(p => contestWeekStart(p.date) === thisWeek));
   const flagged = tally(graded.filter(p => p.edge >= 1.5));
-  const vig = tally(graded.filter(p => p.vigLean >= 0.3));
+  const clvColor = !clv ? 'var(--soft)' : clv.avg > 0 ? 'var(--green)' : clv.avg < 0 ? 'var(--red)' : 'var(--ink)';
 
-  let rows = EDGE_BUCKETS.map(b => {
-    const t = tally(graded.filter(p => p.edge >= b.min && p.edge < b.max));
-    if (!(t.w + t.l + t.p)) return '';
-    const barPct = t.pct != null ? t.pct : 0;
+  const rowFor = (lbl, ps) => {
+    const t = tally(ps); if (!(t.w + t.l + t.p)) return '';
+    const c = avgClv(ps);
     const clr = t.pct == null ? 'var(--soft)' : t.pct >= 55 ? 'var(--green)' : t.pct >= 50 ? 'var(--gold)' : 'var(--red)';
-    return `<div class="rec-row"><span class="rec-lbl">${b.lbl}</span><span class="rec-rec">${recTxt(t)}</span>
-      <span class="rec-meter"><span style="width:${Math.min(100, barPct)}%;background:${clr}"></span></span></div>`;
-  }).join('');
+    const clvStr = c ? ` · CLV ${c.avg > 0 ? '+' : ''}${c.avg}` : '';
+    return `<div class="rec-row"><span class="rec-lbl">${lbl}</span><span class="rec-rec">${recTxt(t)}${clvStr}</span>
+      <span class="rec-meter"><span style="width:${Math.min(100, t.pct || 0)}%;background:${clr}"></span></span></div>`;
+  };
+  const bucketRows = EDGE_BUCKETS.map(b => rowFor(b.lbl, graded.filter(p => p.edge >= b.min && p.edge < b.max))).join('');
+  const isFav = p => (p.poolLine * p.dispSign) < 0;
+  const splitRows = [
+    rowFor('Favorites', graded.filter(isFav)),
+    rowFor('Underdogs', graded.filter(p => !isFav(p))),
+    rowFor('Home picks', graded.filter(p => p.dispSign === 1)),
+    rowFor('Away picks', graded.filter(p => p.dispSign === -1)),
+    rowFor('⚡ Juice-lean', graded.filter(p => p.vigLean >= 0.3)),
+    rowFor('📈 Steaming', graded.filter(p => p.steam >= 15)),
+  ].filter(Boolean).join('');
 
   content.innerHTML = `
     <div class="rec-top">
-      <div class="rec-stat"><div class="rec-num">${recTxt(overall)}</div><div class="rec-cap">Season ATS (following the pick)</div></div>
+      <div class="rec-stat"><div class="rec-num">${graded.length ? recTxt(overall) : '—'}</div><div class="rec-cap">Season ATS (following the pick)</div></div>
+      <div class="rec-stat"><div class="rec-num" style="color:${clvColor}">${clv ? (clv.avg > 0 ? '+' : '') + clv.avg.toFixed(2) + ' pts' : '—'}</div><div class="rec-cap">Avg CLV${clv ? ' · beat close ' + clv.beatPct + '%' : ''}</div></div>
       <div class="rec-stat"><div class="rec-num">${week.w + week.l + week.p ? recTxt(week) : '—'}</div><div class="rec-cap">This week (Mon-start)</div></div>
-      <div class="rec-stat"><div class="rec-num">${flagged.w + flagged.l ? recTxt(flagged) : '—'}</div><div class="rec-cap">Flagged picks (edge ≥ 1.5)</div></div>
-      <div class="rec-stat"><div class="rec-num">${vig.w + vig.l ? recTxt(vig) : '—'}</div><div class="rec-cap">⚡ Juice-lean picks</div></div>
+      <div class="rec-stat"><div class="rec-num">${flagged.w + flagged.l ? recTxt(flagged) : '—'}</div><div class="rec-cap">Flagged (edge ≥ 1.5)</div></div>
     </div>
-    <div class="rec-title">Hit rate by edge size — where your edge actually shows up:</div>
-    ${rows || '<div style="font-size:0.66rem;color:var(--soft)">Not enough graded games yet.</div>'}`;
+    ${clv ? `<div class="help-note" style="margin:0 0 10px;font-size:0.64rem"><b>CLV</b> = did the line move to your side after CoversEdge flagged it. <b style="color:var(--green)">Positive is good</b> — you locked a better number than the close. It reads whether the edges are real <i>before</i> the wins pile up.</div>` : ''}
+    ${graded.length ? `
+      <div class="rec-title">Hit rate by edge size${clv ? ' (with CLV)' : ''}</div>${bucketRows || '<div style="font-size:0.66rem;color:var(--soft)">—</div>'}
+      <div class="rec-title" style="margin-top:12px">Where your edge lives</div>${splitRows || '<div style="font-size:0.66rem;color:var(--soft)">Grade more games to see splits.</div>'}`
+    : `<div style="font-size:0.66rem;color:var(--soft);padding:4px 2px">Games have tipped — click <b>↻ Grade results</b> to add W/L to your record.</div>`}`;
 }
 
 function toggleRecord() {
