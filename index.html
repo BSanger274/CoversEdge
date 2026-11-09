@@ -2733,7 +2733,7 @@ function recordHistory() {
       if (!lineHistory[key]) lineHistory[key] = [];
       const hist = lineHistory[key];
       if (!hist.length || hist[hist.length-1].s !== line.s) {
-        hist.push({ time: now, s: line.s });
+        hist.push({ time: now, s: line.s, t: Date.now() }); // t = numeric stamp for age-pruning on restore
         if (hist.length > 10) hist.shift();
       }
       // Track juice for sharp books so we can spot it "steaming" (getting heavier) over refreshes.
@@ -2749,8 +2749,30 @@ function recordHistory() {
       }
     });
   });
+  // Keep line history bounded to the current slate (drop games that have tipped/left the board).
+  const liveKeys = new Set();
+  allGames.forEach(g => { const id = g.id || (g.away + '@' + g.home); Object.keys(g.books).forEach(bk => liveKeys.add(id + '|' + bk)); });
+  Object.keys(lineHistory).forEach(k => { if (!liveKeys.has(k)) delete lineHistory[k]; });
   saveJuiceHistory();
+  saveLineHistory();
 }
+
+// Persist line history so the per-book movement trail survives page reloads and builds
+// over the whole betting day (not just within one session of Refresh Now clicks).
+function saveLineHistory() {
+  try { localStorage.setItem('coversedge-line-history', JSON.stringify(lineHistory)); } catch(e) {}
+}
+(function initLineHistory() {
+  try {
+    const j = JSON.parse(localStorage.getItem('coversedge-line-history') || 'null');
+    if (!j || typeof j !== 'object') return;
+    const cutoff = Date.now() - 14 * 86400000; // drop anything older than 2 weeks
+    for (const k of Object.keys(j)) {
+      const arr = (j[k] || []).filter(e => !e.t || e.t >= cutoff);
+      if (arr.length) lineHistory[k] = arr;
+    }
+  } catch(e) {}
+})();
 
 // Persist juice history so the 📈 steaming trend survives page reloads and carries
 // across days (it's how the market has moved on a locked pool line over the week).
