@@ -716,6 +716,11 @@ body.dark .covers-edge-text { color: #ffffff !important; }
 .toast.toast-success{ background: #1a6e3a;       border-left: 4px solid #4ade80; }
 @keyframes toastin { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
 
+/* Mobile cards hidden on desktop; the max-width:700px block BELOW re-shows them.
+   This default MUST come before that media query, or (equal specificity) it wins
+   and the cards stay hidden on mobile too. */
+.mobile-cards { display: none; }
+
 @media (max-width: 700px) {
   .wordmark { font-size: 1.8rem; }
   header { padding: 14px 0 12px; }
@@ -734,9 +739,6 @@ body.dark .covers-edge-text { color: #ffffff !important; }
   /* Show mobile cards */
   .mobile-cards { display: flex; flex-direction: column; gap: 12px; }
 }
-
-/* Mobile cards — hidden on desktop */
-.mobile-cards { display: none; }
 
 .game-card {
   background: var(--cream);
