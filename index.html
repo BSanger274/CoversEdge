@@ -2155,6 +2155,7 @@ function extractDK(comp) {
 // groups=50 is REQUIRED to get all of D1. Returns the same {lines, games} shape as
 // fetchCoversLines so the downstream matching/parse is unchanged.
 let lastEspnScores = {};
+let espnLogos = {}; // normalizeTeamKey(team) → ESPN CDN logo URL (captured free from the DK feed)
 async function fetchEspnDK() {
   const lines = {}, games = {}, scores = {};
   const ymd = d => `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
@@ -2173,6 +2174,11 @@ async function fetchEspnDK() {
         if (!home || !away) return;
         const key = normalizeTeamKey(away) + '@' + normalizeTeamKey(home);
         games[key] = { away, home, time: e.date };
+        // Capture team logos free from the same feed (ESPN CDN; falls back to color badge if absent).
+        const hLogo = h && h.team && (h.team.logo || (h.team.logos && h.team.logos[0] && h.team.logos[0].href));
+        const aLogo = a && a.team && (a.team.logo || (a.team.logos && a.team.logos[0] && a.team.logos[0].href));
+        if (hLogo) espnLogos[normalizeTeamKey(home)] = hLogo;
+        if (aLogo) espnLogos[normalizeTeamKey(away)] = aLogo;
         const dk = extractDK(comp);
         if (dk) lines[key] = dk;
         if (comp.status && comp.status.type && comp.status.type.completed) {
@@ -4086,7 +4092,7 @@ function getTeamBadge(teamName) {
   const [bg, fg] = colors;
   const gid = `gc_team_${initials}_${Math.random().toString(36).slice(2,6)}`;
   const light = lightenHex(bg, 0.35);
-  return `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="border-radius:5px;box-shadow:0 2px 4px rgba(0,0,0,0.2)">
+  const badge = `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="display:block;border-radius:5px;box-shadow:0 2px 4px rgba(0,0,0,0.2)">
     <defs>
       <radialGradient id="${gid}" cx="50%" cy="40%" r="60%">
         <stop offset="0%" stop-color="${light}"/>
@@ -4098,6 +4104,20 @@ function getTeamBadge(teamName) {
     <text x="12" y="16.5" font-family="'Syne',sans-serif" font-weight="800" font-size="10"
       fill="${fg}" text-anchor="middle" letter-spacing="-0.5">${initials}</text>
   </svg>`;
+
+  // Prefer the real ESPN team logo (free, from the DK feed). Render the color badge behind it;
+  // if the logo fails to load, onerror removes the <img> and the badge shows through.
+  const logo = espnLogos[normalizeTeamKey(teamName)];
+  if (logo) {
+    return `<span style="position:relative;display:block;width:24px;height:24px;flex-shrink:0">`
+      + `<span style="position:absolute;inset:0">${badge}</span>`
+      + `<img src="${logo}" alt="" loading="lazy" onerror="this.remove()" `
+      + `style="position:absolute;inset:0;width:24px;height:24px;object-fit:contain;`
+      + `border-radius:5px;background:#fff;box-shadow:0 2px 4px rgba(0,0,0,0.2);`
+      + `padding:1.5px;box-sizing:border-box">`
+      + `</span>`;
+  }
+  return badge;
 }
 
 // ── ANIMATED SPREAD COUNTER ──
