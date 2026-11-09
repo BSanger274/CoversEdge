@@ -363,6 +363,7 @@ body.dark .api-note {
 .game-group td {
   padding: 0;
   border-left: 1px solid var(--line);
+  border-bottom: 1px solid var(--line); /* Idea A: divider runs across EVERY column between games */
   vertical-align: middle;
 }
 .game-group td:first-child { border-left: none; }
@@ -376,8 +377,7 @@ body.dark .api-note {
 }
 
 .game-meta-inner {
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--line);
+  padding: 8px 14px;
 }
 
 .matchup {
@@ -397,9 +397,24 @@ body.dark .api-note {
   display: block;
 }
 
-/* Compact matchup cell (schools stay stacked, but pick/time/badge/history pack tighter) */
-.matchup-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-.matchup-text .matchup { line-height: 1.2; }
+/* Compact matchup cell: each team on its own line as [logo] Name, stacked. */
+.matchup-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.matchup-text .matchup { display: flex; flex-direction: column; gap: 1px; line-height: 1.1; font-size: 0.8rem; }
+.matchup .team-row { display: flex; align-items: center; gap: 6px; }
+.matchup .team-row .at { color: var(--soft); font-weight: 400; font-size: 0.72em; width: 9px; text-align: center; flex-shrink: 0; }
+/* Smaller team logos inline with the name so each row stays ~text height, not 24px. */
+.matchup .team-row > span:not(.at):not(.team-clickable),
+.matchup .team-row > svg { width: 18px !important; height: 18px !important; }
+.matchup .team-row > span:not(.at):not(.team-clickable) img { width: 18px !important; height: 18px !important; }
+
+/* Pick line + inline flag chips — kept to one line so every row is the same height (Idea A) */
+.pick-line { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-top: 1px; }
+.pick-main { font-size: 0.55rem; letter-spacing: 0.03em; text-transform: uppercase; color: var(--green); font-weight: 700; font-family: 'Syne', sans-serif; }
+.pick-main .ref-label { opacity: 0.7; font-weight: 400; }
+.flag-chip { font-size: 0.5rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 1px 5px; border-radius: 3px; white-space: nowrap; line-height: 1.5; font-family: 'IBM Plex Mono', monospace; }
+.flag-accent { color: var(--accent); background: rgba(212,56,13,0.1); }
+.flag-soft { color: var(--soft); background: rgba(122,106,90,0.14); }
+
 .meta-row { display: flex; align-items: center; gap: 7px; margin-top: 3px; flex-wrap: wrap; }
 .meta-row .game-time-tag { margin-top: 0; display: inline; }
 .meta-row .var-badge { margin-top: 0; }
@@ -492,8 +507,6 @@ body.dark .covers-edge-text { color: #ffffff !important; }
   align-items: center;
   flex-shrink: 0;
 }
-/* Desktop board: logos side-by-side (away | home) to shorten the matchup cell. */
-.matchup-inner .team-logo-wrap { flex-direction: row; gap: 3px; }
 .team-logo-wrap svg {
   display: block;
   border-radius: 4px;
@@ -1209,8 +1222,11 @@ body.dark .covers-edge-text { color: #ffffff !important; }
     <span>Your edge: +0.5 → +1.0 → +1.5 → +2.0+ pts (grading line vs the sharp benchmark)</span>
   </div>
   <div class="legend-item"><div class="swatch" style="background:rgba(30,80,160,0.12);border:2px solid #1a50a0;"></div><span>Best book (most points for bettor)</span></div>
+  <div class="legend-item"><span style="color:var(--green);font-weight:700">★ PICK</span>&nbsp;<span>Grading line beats the sharp benchmark by ≥0.5 pt (your play) · <b>LINE</b> = no edge, just the number</span></div>
   <div class="legend-item"><div class="swatch sw-flag"></div><span>Gap vs grading line exceeds threshold</span></div>
   <div class="legend-item"><span style="color:var(--accent);font-weight:700">⚡</span>&nbsp;<span>Juice leaning — sharp vig implies the line is about to move (grab it first)</span></div>
+  <div class="legend-item"><span style="color:var(--accent);font-weight:700">📈</span>&nbsp;<span>Steaming — sharp juice got heavier since your last refresh (line on the move)</span></div>
+  <div class="legend-item"><span style="color:var(--soft);font-weight:700">↪ no play</span>&nbsp;<span>Raw numbers favor the dog, but the sharp vig already cancels it — no real edge</span></div>
   <div class="legend-item"><span style="color:#2d7a45;font-weight:700;font-size:0.8rem">▼</span>&nbsp;<span>Line moved down (better)</span>&nbsp;&nbsp;<span style="color:#c0392b;font-weight:700;font-size:0.8rem">▲</span>&nbsp;<span>Line moved up (worse) since last refresh</span></div>
   <div class="legend-item" style="margin-left:auto">Spread mode: favorite's line shown · Juice mode: cost to bet the grading line at each book</div>
 </div>
@@ -3079,19 +3095,28 @@ function renderTable() {
 
     const dt = new Date(game.time);
     const timeStr = dt.toLocaleString('en-US', { weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit', hour12:true, timeZoneName:'short' });
+    // Short form for the compact meta row (weekday + time) so it stays on one line.
+    const timeShort = dt.toLocaleString('en-US', { weekday:'short', hour:'numeric', minute:'2-digit', hour12:true });
 
     const spreads = availBooks.filter(b=>!b.ref && game.books[b.key]).map(b=>game.books[b.key].s).filter(v=>v!=null);
     const coversSpread = game.books.covers?.s ?? null;
     const hasCoversLine = coversSpread !== null;
     const gameId = game.id || (game.away + '@' + game.home);
 
-    // No playable edge, but the plain sharp numbers favor the OTHER side and the vig is what
-    // cancelled it → say so plainly, so "LINE: Hawai'i -8.5" isn't mistaken for a Hawai'i pick.
-    let rawNote = '';
+    // Flag chips shown inline on the pick line (one line → every row the same height, Idea A).
+    // "no play / raw value": no edge, but the plain sharp numbers favor the OTHER side and the
+    // vig cancelled it — so "LINE: Hawai'i -8.5" isn't mistaken for a Hawai'i pick.
+    let rawChip = '';
     if (coversEdge < 0.5 && hasCoversLine && E.rawSign && E.rawSign !== dispSign && (E.rawEdge || 0) >= 0.5) {
       const rawLine = sign(coversSpread * E.rawSign);
-      rawNote = `<br><span style="font-size:0.54rem;letter-spacing:0.05em;text-transform:uppercase;color:var(--soft);font-weight:700;font-family:'IBM Plex Mono',monospace;" title="On the plain sharp numbers, ${abbrev(E.rawTeam)} ${rawLine} is worth +${(E.rawEdge).toFixed(1)} — but the sharp juice says the line is already moving to match, so there's no real edge. Switch 'Edge vs' → 'Sharp displayed line' to grade on raw numbers instead.">↪ raw value ${abbrev(E.rawTeam)} ${rawLine} · line moving — no play</span>`;
+      rawChip = `<span class="flag-chip flag-soft" title="On the plain sharp numbers, ${abbrev(E.rawTeam)} ${rawLine} is worth +${(E.rawEdge).toFixed(1)} — but the sharp juice says the line is already moving to match, so there's no real edge. Switch 'Edge vs' → 'Sharp displayed line' to grade on raw numbers instead.">↪ ${abbrev(E.rawTeam)} ${rawLine} · no play</span>`;
     }
+    const leanChip = (!rawChip && E.vigLean >= 0.3)
+      ? `<span class="flag-chip flag-accent" title="Juice leaning — the sharp vig implies the number is about to move. Grab it before it does.">⚡ ${E.vigLean.toFixed(1)}</span>` : '';
+    const steamChip = (steam >= 15)
+      ? `<span class="flag-chip flag-accent" title="Steaming — sharp juice on this side got heavier since your last refresh; the line is on the move.">📈 steam</span>` : '';
+    const projChip = proj
+      ? `<span class="flag-chip" style="background:${proj.pct>=54?'rgba(45,122,69,0.18)':proj.pct>=50?'rgba(154,123,18,0.18)':'rgba(192,57,43,0.16)'};color:${proj.pct>=54?'var(--green)':proj.pct>=50?'var(--gold)':'var(--red)'}" title="Projected ATS cover %, calibrated from your record on this edge range (${proj.raw.w}-${proj.raw.l}, ${proj.raw.pct}%), regularized toward 50%.">~${proj.pct}%</span>` : '';
 
     // Best book = highest displayed value (most points for the bettor on the shown side).
     // Always compare in display space (s * dispSign) so +7.5 > +7 > -7 always holds.
@@ -3118,19 +3143,18 @@ function renderTable() {
     <tr class="game-group" onclick="toggleDetail('detail-${gi}', this)">
       <td class="game-meta" rowspan="1">
         <div class="game-meta-inner">
-          <div class="matchup-inner">
-            <div class="team-logo-wrap">
-              ${getTeamBadge(game.away)}
-              ${getTeamBadge(game.home)}
+          <div class="matchup-text">
+            <div class="matchup">
+              <span class="team-row">${getTeamBadge(game.away)}<span class="team-clickable" onclick="event.stopPropagation();openTeamPopup('${jsq(game.away)}')">${abbrev(game.away)}</span></span>
+              <span class="team-row"><span class="at">@</span>${getTeamBadge(game.home)}<span class="team-clickable" onclick="event.stopPropagation();openTeamPopup('${jsq(game.home)}')">${abbrev(game.home)}</span></span>
             </div>
-            <div class="matchup-text">
-              <div class="matchup"><span class="team-clickable" onclick="event.stopPropagation();openTeamPopup('${jsq(game.away)}')">${abbrev(game.away)}</span><br><span style="opacity:.4;font-size:.7em">@</span> <span class="team-clickable" onclick="event.stopPropagation();openTeamPopup('${jsq(game.home)}')">${abbrev(game.home)}</span></div>
-              <span style="font-size:0.58rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--green);font-weight:700;font-family:'Syne',sans-serif;">${coversEdge >= 0.5 ? '★ PICK' : 'LINE'}: ${abbrev(displayTeam)}${hasCoversLine ? ' ' + sign(coversSpread * dispSign) : ''}${coversEdge >= 0.5 ? ` · +${coversEdge.toFixed(1)} edge <span style="opacity:.7;font-weight:400">${E.refLabel}</span>` : ''}${proj ? ` <span style="font-weight:700;padding:0 4px;border-radius:2px;background:${proj.pct>=54?'rgba(45,122,69,0.18)':proj.pct>=50?'rgba(154,123,18,0.18)':'rgba(192,57,43,0.16)'};color:${proj.pct>=54?'var(--green)':proj.pct>=50?'var(--gold)':'var(--red)'}" title="Projected ATS cover %, calibrated from your record on this edge range (${proj.raw.w}-${proj.raw.l}, ${proj.raw.pct}%), regularized toward 50%">~${proj.pct}%</span>` : ''}</span>${rawNote ? rawNote : (E.vigLean >= 0.3 ? `<br><span style="font-size:0.54rem;letter-spacing:0.06em;text-transform:uppercase;color:var(--accent);font-weight:700;font-family:'IBM Plex Mono',monospace;" title="Sharp vig implies the number is about to move — grab it first">⚡ juice leaning +${E.vigLean.toFixed(1)}</span>` : '')}${steam >= 15 ? `<br><span style="font-size:0.54rem;letter-spacing:0.06em;text-transform:uppercase;color:var(--accent);font-weight:700;font-family:'IBM Plex Mono',monospace;" title="Sharp juice got heavier since your last refresh — the line is steaming">📈 steaming</span>` : ''}
-              <div class="meta-row">
-                <span class="game-time-tag">${timeStr}</span>
-                <span class="var-badge ${varClass}">${varLabel}</span>
-                <span class="expand-arrow" style="font-size:0.6rem;color:var(--soft);letter-spacing:0.1em">▼ HISTORY</span>
-              </div>
+            <div class="pick-line">
+              <span class="pick-main">${coversEdge >= 0.5 ? '★ PICK' : 'LINE'}: ${abbrev(displayTeam)}${hasCoversLine ? ' ' + sign(coversSpread * dispSign) : ''}${coversEdge >= 0.5 ? ` · +${coversEdge.toFixed(1)} edge <span class="ref-label">${E.refLabel}</span>` : ''}</span>${projChip}${rawChip}${leanChip}${steamChip}
+            </div>
+            <div class="meta-row">
+              <span class="game-time-tag" title="${timeStr}">${timeShort}</span>
+              <span class="var-badge ${varClass}">${varLabel}</span>
+              <span class="expand-arrow" style="font-size:0.6rem;color:var(--soft);letter-spacing:0.1em">▼ HISTORY</span>
             </div>
           </div>
         </div>
