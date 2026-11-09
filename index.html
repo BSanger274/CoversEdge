@@ -558,7 +558,14 @@ body.dark .covers-edge-text { color: #ffffff !important; }
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--soft);
-  margin-bottom: 10px;
+  margin-bottom: 6px;
+}
+.detail-sub {
+  font-size: 0.64rem;
+  line-height: 1.5;
+  color: var(--soft);
+  margin-bottom: 12px;
+  max-width: 620px;
 }
 .history-grid {
   display: flex;
@@ -3265,7 +3272,7 @@ function renderTable() {
       const hist = lineHistory[gameIdForHistory + '|' + b.key] || [];
       if (!hist.length && !game.books[b.key]) return;
       histHtml += '<div class="history-book">';
-      histHtml += '<div class="history-book-name" style="display:flex;align-items:center;gap:5px">' + getBookBadge(b.key, 20) + b.label + '</div>';
+      histHtml += '<div class="history-book-name" style="display:flex;align-items:center;gap:5px">' + getBookBadge(b.ref && hasAnyDK ? 'draftkings' : b.key, 20, true) + (b.ref && hasAnyDK ? 'DK' : b.label) + '</div>';
       histHtml += '<div class="history-entries">';
       if (hist.length === 0 && game.books[b.key]) {
         histHtml += '<div class="history-entry h-current"><span class="h-time">now</span><span class="h-val">' + fmt(game.books[b.key].s * ds) + '</span></div>';
@@ -3286,6 +3293,7 @@ function renderTable() {
     html += '<tr class="detail-row" id="' + rowId + '">' +
       '<td colspan="99"><div class="detail-panel">' +
       '<div class="detail-title">Line History — shown for ' + abbrev(displayTeam) + ' (' + abbrev(game.away) + ' @ ' + abbrev(game.home) + ')</div>' +
+      '<div class="detail-sub">Every refresh time-stamps each book\'s line. One fetch so far = just <b>now</b> (matches the board). Refresh through the day and moved lines stack up here — <span style="color:var(--green);font-weight:700">green</span> = moved toward your pick, <span style="color:var(--red);font-weight:700">red</span> = against it.</div>' +
       histHtml + '</div></td></tr>';
 
     html += gi < games.length-1 ? '<tr class="group-sep"><td colspan="99"></td></tr>' : '';
