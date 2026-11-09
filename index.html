@@ -397,15 +397,11 @@ body.dark .api-note {
   display: block;
 }
 
-/* Compact matchup cell: each team on its own line as [logo] Name, stacked. */
+/* Matchup cell: logos side-by-side (away | home), team names stacked beside them. */
+.matchup-inner .team-logo-wrap { flex-direction: row; gap: 3px; }
 .matchup-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.matchup-text .matchup { display: flex; flex-direction: column; gap: 1px; line-height: 1.1; font-size: 0.8rem; }
-.matchup .team-row { display: flex; align-items: center; gap: 6px; }
-.matchup .team-row .at { color: var(--soft); font-weight: 400; font-size: 0.72em; width: 9px; text-align: center; flex-shrink: 0; }
-/* Smaller team logos inline with the name so each row stays ~text height, not 24px. */
-.matchup .team-row > span:not(.at):not(.team-clickable),
-.matchup .team-row > svg { width: 18px !important; height: 18px !important; }
-.matchup .team-row > span:not(.at):not(.team-clickable) img { width: 18px !important; height: 18px !important; }
+.matchup-text .matchup { line-height: 1.2; }
+.matchup .at { color: var(--soft); font-weight: 400; font-size: 0.7em; }
 
 /* Pick line + inline flag chips — kept to one line so every row is the same height (Idea A) */
 .pick-line { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-top: 1px; }
@@ -3143,18 +3139,21 @@ function renderTable() {
     <tr class="game-group" onclick="toggleDetail('detail-${gi}', this)">
       <td class="game-meta" rowspan="1">
         <div class="game-meta-inner">
-          <div class="matchup-text">
-            <div class="matchup">
-              <span class="team-row">${getTeamBadge(game.away)}<span class="team-clickable" onclick="event.stopPropagation();openTeamPopup('${jsq(game.away)}')">${abbrev(game.away)}</span></span>
-              <span class="team-row"><span class="at">@</span>${getTeamBadge(game.home)}<span class="team-clickable" onclick="event.stopPropagation();openTeamPopup('${jsq(game.home)}')">${abbrev(game.home)}</span></span>
+          <div class="matchup-inner">
+            <div class="team-logo-wrap">
+              ${getTeamBadge(game.away)}
+              ${getTeamBadge(game.home)}
             </div>
-            <div class="pick-line">
-              <span class="pick-main">${coversEdge >= 0.5 ? '★ PICK' : 'LINE'}: ${abbrev(displayTeam)}${hasCoversLine ? ' ' + sign(coversSpread * dispSign) : ''}${coversEdge >= 0.5 ? ` · +${coversEdge.toFixed(1)} edge <span class="ref-label">${E.refLabel}</span>` : ''}</span>${projChip}${rawChip}${leanChip}${steamChip}
-            </div>
-            <div class="meta-row">
-              <span class="game-time-tag" title="${timeStr}">${timeShort}</span>
-              <span class="var-badge ${varClass}">${varLabel}</span>
-              <span class="expand-arrow" style="font-size:0.6rem;color:var(--soft);letter-spacing:0.1em">▼ HISTORY</span>
+            <div class="matchup-text">
+              <div class="matchup"><span class="team-clickable" onclick="event.stopPropagation();openTeamPopup('${jsq(game.away)}')">${abbrev(game.away)}</span><br><span class="at">@</span> <span class="team-clickable" onclick="event.stopPropagation();openTeamPopup('${jsq(game.home)}')">${abbrev(game.home)}</span></div>
+              <div class="pick-line">
+                <span class="pick-main">${coversEdge >= 0.5 ? '★ PICK' : 'LINE'}: ${abbrev(displayTeam)}${hasCoversLine ? ' ' + sign(coversSpread * dispSign) : ''}${coversEdge >= 0.5 ? ` · +${coversEdge.toFixed(1)} edge <span class="ref-label">${E.refLabel}</span>` : ''}</span>${projChip}${rawChip}${leanChip}${steamChip}
+              </div>
+              <div class="meta-row">
+                <span class="game-time-tag" title="${timeStr}">${timeShort}</span>
+                <span class="var-badge ${varClass}">${varLabel}</span>
+                <span class="expand-arrow" style="font-size:0.6rem;color:var(--soft);letter-spacing:0.1em">▼ HISTORY</span>
+              </div>
             </div>
           </div>
         </div>
