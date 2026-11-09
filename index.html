@@ -746,65 +746,28 @@ body.dark .covers-edge-text { color: #ffffff !important; }
   border-radius: 8px;
   overflow: hidden;
 }
-.game-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 12px 8px;
-  border-bottom: 1px solid var(--line);
-  gap: 8px;
+/* Compact tappable header: main data box; the book grid lives in a dropdown below. */
+.gc-head {
+  display: flex; align-items: center; gap: 9px; width: 100%;
+  text-align: left; padding: 9px 11px; background: transparent;
+  border: none; cursor: pointer; color: inherit; font: inherit;
 }
-.game-card-matchup {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 1;
-  min-width: 0;
-}
-.game-card-teams {
-  font-family: 'Syne', sans-serif;
-  font-size: 0.78rem;
-  font-weight: 700;
-  line-height: 1.3;
-  color: var(--ink);
-}
-.game-card-meta {
-  font-size: 0.52rem;
-  letter-spacing: 0.08em;
-  color: var(--soft);
-  margin-top: 2px;
-  text-transform: uppercase;
-}
-.game-card-covers {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 6px 10px;
-  border-radius: 6px;
-  min-width: 56px;
-  text-align: center;
-  flex-shrink: 0;
-}
-.game-card-covers .cvr-num {
-  font-family: 'Syne', sans-serif;
-  font-size: 1.1rem;
-  font-weight: 800;
-  line-height: 1;
-}
-.game-card-covers .cvr-label {
-  font-size: 0.44rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  margin-top: 3px;
-  opacity: 0.75;
-}
-.game-card-covers .cvr-edge {
-  font-size: 0.5rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  margin-top: 2px;
-  font-weight: 700;
-}
+.gc-logos { display: flex; flex-direction: column; gap: 3px; flex-shrink: 0; }
+.gc-main { flex: 1; min-width: 0; }
+.gc-teams { font-family: 'Syne', sans-serif; font-size: 0.82rem; font-weight: 700; line-height: 1.2; color: var(--ink); }
+.gc-teams .gc-at { color: var(--soft); font-weight: 400; font-size: 0.72em; }
+.gc-pick { font-size: 0.56rem; letter-spacing: 0.03em; text-transform: uppercase; font-weight: 700; color: var(--green); margin-top: 3px; line-height: 1.3; }
+.gc-pick.gc-noedge { color: var(--soft); }
+.gc-time { font-size: 0.52rem; letter-spacing: 0.07em; text-transform: uppercase; color: var(--soft); margin-top: 3px; }
+.gc-books-hint { color: var(--accent); font-weight: 700; }
+.gc-grade { display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0; min-width: 44px; }
+.gc-grade-num { font-family: 'Syne', sans-serif; font-size: 1.25rem; font-weight: 800; line-height: 1; color: var(--ink); } /* always readable — no green-on-green */
+.gc-grade-lbl { font-size: 0.46rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--soft); margin-top: 3px; }
+.gc-edge-pill { margin-top: 4px; background: var(--green); color: #fff; font-size: 0.5rem; font-weight: 800; letter-spacing: 0.03em; padding: 1px 7px; border-radius: 10px; }
+.gc-chev { flex-shrink: 0; color: var(--soft); transition: transform 0.2s; font-size: 0.72rem; margin-left: 1px; }
+.game-card.gc-open { border-color: var(--soft); }
+.game-card.gc-open .gc-chev { transform: rotate(180deg); }
+.gc-books-wrap[hidden] { display: none; }
 .game-card-books {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -4250,87 +4213,90 @@ function animateSpreadChange(el, newVal, gameId, bookKey, dispSign) {
 }
 
 // Called after renderTable inserts HTML — wire up animation observers
+let mobileBookHTML = {}; // idx → book-grid HTML, inserted lazily on first expand (perf: no image pile-up)
+function toggleCardBooks(idx) {
+  const card = document.getElementById('gc-' + idx);
+  const wrap = document.getElementById('gcb-' + idx);
+  if (!wrap || !card) return;
+  const opening = wrap.hasAttribute('hidden');
+  if (opening && !wrap.dataset.filled) { wrap.innerHTML = mobileBookHTML[idx] || ''; wrap.dataset.filled = '1'; }
+  if (opening) { wrap.removeAttribute('hidden'); card.classList.add('gc-open'); }
+  else { wrap.setAttribute('hidden', ''); card.classList.remove('gc-open'); }
+}
+
 function renderMobileCards(games, availBooks) {
   const container = document.getElementById('mobile-cards-content');
   if (!container) return;
 
   const nonRefBooks = availBooks.filter(b => !b.ref);
+  mobileBookHTML = {};
 
   let html = '';
-  games.forEach(game => {
+  games.forEach((game, idx) => {
     const coversSpread = game.books.covers?.s ?? 0;
-    const gameId = game.id || (game.away + '@' + game.home);
     const dt = new Date(game.time);
     const timeStr = dt.toLocaleString('en-US', { weekday:'short', hour:'numeric', minute:'2-digit', hour12:true, timeZone:'America/New_York' }) + ' ET';
 
-    // Edge detection — shared engine, current benchmark mode.
     const E = game._edge || computeEdge(game);
     const dispSign = E.dispSign || (coversSpread < 0 ? 1 : -1);
     const displayTeam = E.displayTeam || (coversSpread < 0 ? game.home : game.away);
     const coversEdge = E.edge;
     const hasCov = game.books.covers?.s != null;
-    // Same "raw value but line moving — no play" clarifier as the desktop board.
+    const hasEdge = coversEdge >= 0.5;
+    const gradeNum = hasCov ? sign(coversSpread * dispSign) : '–';
+    const gradeSrc = game.books.covers?.fromDK ? 'DK' : game.books.covers?.fromPool ? 'Pool' : game.books.covers?.fromConsensus ? 'Mkt est' : 'Covers';
+
+    // "raw value but line moving — no play" clarifier (no edge, dog has the raw value)
     let rawNote = '';
     if (coversEdge < 0.5 && hasCov && E.rawSign && E.rawSign !== dispSign && (E.rawEdge || 0) >= 0.5) {
-      rawNote = ` · <span style="color:var(--soft);font-weight:700" title="On the plain sharp numbers, ${abbrev(E.rawTeam)} ${sign(coversSpread * E.rawSign)} is worth +${(E.rawEdge).toFixed(1)}, but the sharp juice says the line is already moving to match — no real edge.">↪ raw: ${abbrev(E.rawTeam)} ${sign(coversSpread * E.rawSign)} · moving, no play</span>`;
+      rawNote = ` · ↪ ${abbrev(E.rawTeam)} ${sign(coversSpread * E.rawSign)} no play`;
     }
+    const proj = hasEdge ? projectedCover(coversEdge) : null;
+    const pickTxt = `${hasEdge ? '★ PICK' : 'LINE'}: ${abbrev(displayTeam)}${hasCov ? ' ' + sign(coversSpread * dispSign) : ''}${hasEdge ? ' · +' + coversEdge.toFixed(1) + ' edge' : ''}`
+      + (proj ? ` · ~${proj.pct}%` : '') + rawNote;
 
-    const coversDisp = coversSpread * dispSign;
-    const coversLabel = sign(coversDisp);
-    const hasEdge = coversEdge >= 0.5;
-    const intensity = Math.min(coversEdge / 3.0, 1.0);
-    const alpha = 0.18 + intensity * 0.65;
-    const r = Math.round(45 - intensity * 20);
-    const g = Math.round(180 - intensity * 50);
-    const bv = Math.round(90 - intensity * 40);
-    const coversBg = hasEdge ? `rgba(${r},${g},${bv},${alpha.toFixed(2)})` : 'rgba(180,130,50,0.14)';
-    const coversClr = hasEdge
-      ? (document.body.classList.contains('dark') && alpha > 0.45 ? '#fff' : `rgb(${Math.round(10+intensity*5)},${Math.round(100-intensity*30)},${Math.round(40-intensity*10)})`)
-      : 'var(--gold)';
-
-    // Find best book for this game — highest displayed spread (most points for the bettor)
+    // Best book = most points for the bettor on the shown side
     const dispSpreads = nonRefBooks.filter(b => game.books[b.key]).map(b => ({ key: b.key, disp: game.books[b.key].s * dispSign }));
     const bestDisp = dispSpreads.length ? Math.max(...dispSpreads.map(d => d.disp)) : null;
+    const nBooks = dispSpreads.length;
 
-    html += `<div class="game-card">
-      <div class="game-card-header">
-        <div class="game-card-matchup">
-          <div class="team-logo-wrap">${getTeamBadge(game.away)}${getTeamBadge(game.home)}</div>
-          <div>
-            <div class="game-card-teams"><span class="team-clickable" onclick="openTeamPopup('${jsq(game.away)}')">${abbrev(game.away)}</span><br><span style="opacity:.4;font-size:.85em">@</span> <span class="team-clickable" onclick="openTeamPopup('${jsq(game.home)}')">${abbrev(game.home)}</span></div>
-            <div class="game-card-meta">${timeStr} · <span style="color:var(--green);font-weight:700;">${coversEdge >= 0.5 ? '★ PICK' : 'LINE'}: ${abbrev(displayTeam)}${game.books.covers?.s != null ? ' ' + sign(coversSpread * dispSign) : ''}${coversEdge >= 0.5 ? ' · +' + coversEdge.toFixed(1) + ' edge' : ''}</span>${rawNote}${(() => { const pj = coversEdge >= 0.5 ? projectedCover(coversEdge) : null; return pj ? ` · <span style="font-weight:700;color:${pj.pct>=54?'var(--green)':pj.pct>=50?'var(--gold)':'var(--red)'}">~${pj.pct}% cover</span>` : ''; })()}</div>
-          </div>
+    // Collapsed card (main data box) — tap to expand the book grid.
+    html += `<div class="game-card${hasEdge ? ' has-edge' : ''}" id="gc-${idx}">
+      <button class="gc-head" onclick="toggleCardBooks(${idx})" aria-label="Toggle sportsbooks">
+        <div class="gc-logos">${getTeamBadge(game.away)}${getTeamBadge(game.home)}</div>
+        <div class="gc-main">
+          <div class="gc-teams"><span class="team-clickable" onclick="event.stopPropagation();openTeamPopup('${jsq(game.away)}')">${abbrev(game.away)}</span><br><span class="gc-at">@</span> <span class="team-clickable" onclick="event.stopPropagation();openTeamPopup('${jsq(game.home)}')">${abbrev(game.home)}</span></div>
+          <div class="gc-pick${hasEdge ? '' : ' gc-noedge'}">${pickTxt}</div>
+          <div class="gc-time">${timeStr} · <span class="gc-books-hint">${nBooks} books ▾</span></div>
         </div>
-        <div class="game-card-covers" style="background:${coversBg}">
-          <div class="cvr-num" style="color:${coversClr}">${coversLabel}</div>
-          <div class="cvr-label" style="color:${coversClr}">${game.books.covers?.fromDK ? 'DK' : game.books.covers?.fromPool ? 'Pool' : game.books.covers?.fromConsensus ? 'Mkt Est' : 'Covers'}</div>
-          ${hasEdge ? `<div class="cvr-edge" style="color:${coversClr}">+${coversEdge.toFixed(1)} edge</div>` : ''}
+        <div class="gc-grade">
+          <div class="gc-grade-num">${gradeNum}</div>
+          <div class="gc-grade-lbl">${gradeSrc}</div>
+          ${hasEdge ? `<div class="gc-edge-pill">+${coversEdge.toFixed(1)}</div>` : ''}
         </div>
-      </div>
-      <div class="game-card-books">`;
+        <span class="gc-chev">▼</span>
+      </button>
+      <div class="gc-books-wrap" id="gcb-${idx}" hidden></div>
+    </div>`;
 
+    // Book grid (built now, inserted on first expand so collapsed cards load zero logos).
+    let grid = '<div class="game-card-books">';
     nonRefBooks.forEach(b => {
       const line = game.books[b.key];
       if (!line) return;
       const lineDisp = line.s * dispSign;
       const isBest = bestDisp !== null && Math.abs(lineDisp - bestDisp) < 0.01;
       const refDisp = coversSpread * dispSign;
-      const delta = refDisp - lineDisp; // positive = book is worse than reference
-      const isFlagged = delta >= threshold && !isBest;
+      const isFlagged = (refDisp - lineDisp) >= threshold && !isBest;
       const cls = isBest ? 'bk-best' : (isFlagged ? 'bk-flagged' : '');
-      html += `<div class="game-card-book ${cls}">
-        ${getBookBadge(b.key, 18)}
+      grid += `<div class="game-card-book ${cls}">
+        ${getBookBadge(b.key, 18, true)}
         <div class="bk-spread">${sign(lineDisp)}</div>
         <div class="bk-juice">${line.sj > 0 ? '+' : ''}${line.sj}</div>
       </div>`;
     });
-
-    html += `</div>
-      <div class="game-card-delta">
-        <span>edge ${E.refLabel || ''}</span>
-        <span>${coversEdge >= 0.5 ? '⚠ ' + coversEdge.toFixed(1) + ' pts' : '—'}</span>
-      </div>
-    </div>`;
+    grid += `</div><div class="game-card-delta"><span>edge ${E.refLabel || ''}</span><span>${hasEdge ? '⚠ ' + coversEdge.toFixed(1) + ' pts' : '—'}</span></div>`;
+    mobileBookHTML[idx] = grid;
   });
 
   container.innerHTML = html;
