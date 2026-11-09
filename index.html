@@ -1484,6 +1484,14 @@ function medianOf(arr) {
 // absurd prices (e.g. -9900, -100000) and a point nowhere near the market — reject those.
 function sanePrice(p) { return p == null || Math.abs(p) <= 1500; }
 
+// A spread's price (juice) on a real two-sided market sits near -110; both sides almost
+// never exceed ~-200. Exchanges (Novig/ProphetX) quote a spread POINT at the empty edge of
+// a thin order book with enormous juice (e.g. -809, -1233) where the point is nowhere near
+// the real market (e.g. -18.5 when every other book is -15.5). That juice is the tell that
+// there's no liquidity there — treat any spread whose juice is this lopsided as "no market"
+// and ignore that book's spread for the game, so it can't corrupt the sharp comparison.
+function saneSpreadJuice(p) { return p == null || Math.abs(p) <= 400; }
+
 // A book's vig-implied "true" line in home-team terms. Heavy favorite juice (e.g. home
 // -10 at -160) pushes the true line past -10 toward -10.5; cheap/plus juice pulls it back.
 function trueLineHome(s, sj, sjOpp) {
@@ -2835,7 +2843,7 @@ function parseApiResponse(data, coversLines = {}) {
       const collectOutcomes = (mkt) => {
         mkt?.outcomes?.forEach(o => {
           if (o.point === undefined) return;
-          if (!sanePrice(o.price)) return; // drop placeholder exchange rungs with absurd prices
+          if (!sanePrice(o.price) || !saneSpreadJuice(o.price)) return; // drop placeholder exchange rungs with absurd prices/juice
           const pt = +(o.point).toFixed(1);
           if (o.name === event.home_team) {
             allLines[String(pt)] = o.price ?? -110;
@@ -2854,9 +2862,13 @@ function parseApiResponse(data, coversLines = {}) {
       // In that case fall back to buildAllLines which covers ±8 steps from primary.
       const hasRealAltLines = Object.keys(allLines).length > 2;
 
-      // Reject the book's line entirely when its primary spread price is absurd — that's
-      // a no-liquidity placeholder (common on Novig/ProphetX), not a real market line.
-      if (homeSpread && sanePrice(homeSpread.price)) {
+      // Reject the book's line entirely when its primary spread price/juice is absurd on
+      // EITHER side — a spread quoted at -809 juice is a no-liquidity placeholder at the edge
+      // of a thin exchange order book (common on Novig/ProphetX), not a real market line, and
+      // its point is nowhere near the market. Dropping it keeps it out of the sharp comparison.
+      const spreadMarketReal = homeSpread && sanePrice(homeSpread.price)
+        && saneSpreadJuice(homeSpread.price) && saneSpreadJuice(awaySpread?.price);
+      if (spreadMarketReal) {
         // If API returned alternate spreads, use them; otherwise build a simulated menu
         const finalAllLines = hasRealAltLines
           ? allLines
@@ -2865,7 +2877,7 @@ function parseApiResponse(data, coversLines = {}) {
         books[mapped] = {
           s:       homeSpread.point,
           sj:      homeSpread.price ?? -110,
-          sjOpp:   sanePrice(awaySpread?.price) ? (awaySpread?.price ?? null) : null, // away price for no-vig (sane only)
+          sjOpp:   (sanePrice(awaySpread?.price) && saneSpreadJuice(awaySpread?.price)) ? (awaySpread?.price ?? null) : null, // away price for no-vig (sane only)
           t:       overTotal?.point ?? 0,
           tj:      overTotal?.price ?? -110,
           ml:      homeML?.price ?? 0,
