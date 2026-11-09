@@ -1511,11 +1511,12 @@ function sanePrice(p) { return p == null || Math.abs(p) <= 1500; }
 
 // A spread's price (juice) on a real two-sided market sits near -110; both sides almost
 // never exceed ~-200. Exchanges (Novig/ProphetX) quote a spread POINT at the empty edge of
-// a thin order book with enormous juice (e.g. -809, -1233) where the point is nowhere near
-// the real market (e.g. -18.5 when every other book is -15.5). That juice is the tell that
-// there's no liquidity there — treat any spread whose juice is this lopsided as "no market"
-// and ignore that book's spread for the game, so it can't corrupt the sharp comparison.
-function saneSpreadJuice(p) { return p == null || Math.abs(p) <= 400; }
+// a thin order book with lopsided juice (e.g. -809, or even -250) where the point is off the
+// real market (e.g. -18.5 when every other book is -15.5). That juice is the tell that there's
+// no real liquidity there — treat any spread whose juice is worse than -200 (|juice| > 200) as
+// "no market" and ignore that book's spread for the game, so it can't corrupt the sharp
+// comparison. Real spreads sit near -110 and rarely pass ~-180, so 200 is a safe cutoff.
+function saneSpreadJuice(p) { return p == null || Math.abs(p) <= 200; }
 
 // A book's vig-implied "true" line in home-team terms. Heavy favorite juice (e.g. home
 // -10 at -160) pushes the true line past -10 toward -10.5; cheap/plus juice pulls it back.
