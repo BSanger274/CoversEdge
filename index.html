@@ -3199,7 +3199,7 @@ function renderTable() {
           html += `
           <td class="covers-col">
             <div class="cell-inner" style="background:rgba(180,130,50,0.14)">
-              <span class="cell-spread" style="color:var(--gold);font-weight:700">${sign((line.sRaw ?? line.s) * dispSign)}</span>
+              <span class="cell-spread" style="color:var(--gold);font-weight:700">${sign((line.fromConsensus ? line.s : (line.sRaw ?? line.s)) * dispSign)}</span>
               <span class="cell-juice" style="color:var(--gold)">${line.sj > 0 ? '+' : ''}${line.sj}</span>
               <span style="font-size:0.48rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--soft);margin-top:1px">${line.fromConsensus ? '~MKT EST' : 'REF LINE'}</span>
             </div>
@@ -3209,7 +3209,7 @@ function renderTable() {
           <td class="covers-col">
             <div class="cell-inner" style="${bgStyle}">
               <span class="covers-inline">
-                <span class="cell-spread covers-edge-text" style="${textStyle}" data-spread-cell data-game-id="${gameId}" data-book-key="covers" data-val="${line.s}" data-disp-sign="${dispSign}">${sign((line.sRaw ?? line.s) * dispSign)}${arrow}</span>
+                <span class="cell-spread covers-edge-text" style="${textStyle}" data-spread-cell data-game-id="${gameId}" data-book-key="covers" data-val="${line.s}" data-disp-sign="${dispSign}">${sign((line.fromConsensus ? line.s : (line.sRaw ?? line.s)) * dispSign)}${arrow}</span>
                 <span class="cell-juice" style="margin-top:0;${(line.fromConsensus || line.fromPool) ? 'color:var(--soft);font-style:italic;' : ''}">${line.fromConsensus ? '~est' : line.fromPool ? 'pool' : (line.sj > 0 ? '+' : '') + line.sj}</span>
               </span>
               ${edgeLabel ? `<span style="font-size:0.52rem;letter-spacing:0.06em;margin-top:1px;color:inherit;opacity:0.85">${edgeLabel} EDGE</span>` : ''}
