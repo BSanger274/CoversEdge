@@ -19,7 +19,9 @@ module.exports = async (req, res) => {
 
   if (!key) { res.status(501).json({ error: 'Server API key not configured' }); return; }
 
-  const regions = String(q.regions || 'us,us2,us_ex');
+  // 'us2' dropped from the default to save credits — it carried no book the app shows
+  // (fliff/espnbet/betwhale/hardrockbet/betparx/ballybet). Re-add it here if one is ever needed.
+  const regions = String(q.regions || 'us,us_ex');
   // The app only shows spread + spread-juice, so fetch only the spreads market.
   // The Odds API bills 1 credit per region PER MARKET, so dropping h2h+totals
   // cuts every fetch's cost by ~2/3 with no visible change.

@@ -1799,7 +1799,12 @@ async function fetchLiveData() {
   try {
     let usData = [], euData = [], allEvents = [], coversResult_val = { lines: {}, games: {} };
 
-    try { usData = await fetchOddsRegion(apiKey, 'us,us2,us_ex'); } catch(e) {
+    // 'us2' region DROPPED 2026-11-11 to save credits — verified live it only carries
+    // fliff/espnbet/betwhale/hardrockbet/betparx/ballybet, none of which map to a shown
+    // book. If we ever add one of those, put 'us2' back into this region list (adds 1
+    // credit/fetch per market). 'us' has DK/FanDuel/LowVig(Circa)/BetOnline; 'us_ex' has
+    // Novig/ProphetX; 'eu' (below) has Pinnacle.
+    try { usData = await fetchOddsRegion(apiKey, 'us,us_ex'); } catch(e) {
       throw new Error('Could not reach The Odds API: ' + e.message + '. If your key is correct, a CORS proxy may be temporarily down — try again in a moment.');
     }
 
