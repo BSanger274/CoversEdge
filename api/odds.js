@@ -20,7 +20,10 @@ module.exports = async (req, res) => {
   if (!key) { res.status(501).json({ error: 'Server API key not configured' }); return; }
 
   const regions = String(q.regions || 'us,us2,us_ex');
-  const markets = String(q.markets || 'spreads,h2h,totals');
+  // The app only shows spread + spread-juice, so fetch only the spreads market.
+  // The Odds API bills 1 credit per region PER MARKET, so dropping h2h+totals
+  // cuts every fetch's cost by ~2/3 with no visible change.
+  const markets = String(q.markets || 'spreads');
   const from = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
   const to = new Date(Date.now() + 7 * 86400000).toISOString().replace(/\.\d{3}Z$/, 'Z');
   const url = 'https://api.the-odds-api.com/v4/sports/basketball_ncaab/odds'

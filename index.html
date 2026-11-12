@@ -992,7 +992,7 @@ body.dark .covers-edge-text { color: #ffffff !important; }
     style="background:var(--cream);color:var(--ink);border:1.5px solid var(--line);opacity:0.5;cursor:not-allowed;"
     disabled>↻ Refresh Now</button>
   <button class="btn btn-demo" onclick="loadDemo()">Use Demo Data</button>
-  <div class="api-note">Free tier: 500 req/mo · basketball_ncaab · spreads + h2h + totals<br>No key? Click "Use Demo Data" for sample layout.<br><span id="credits-chip" style="color:var(--flag);font-weight:600"></span></div>
+  <div class="api-note">Free tier: 500 req/mo · basketball_ncaab · spreads only (4 credits/fetch)<br>No key? Click "Use Demo Data" for sample layout.<br><span id="credits-chip" style="color:var(--flag);font-weight:600"></span></div>
 </div>
 
 <!-- POOL LINES BAR -->
@@ -2119,7 +2119,7 @@ async function fetchOddsRegion(apiKey, regions) {
   const from = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
   const to   = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().replace(/\.\d{3}Z$/, 'Z');
   const url = 'https://api.the-odds-api.com/v4/sports/basketball_ncaab/odds?' +
-    'regions=' + regions + '&markets=spreads,h2h,totals&oddsFormat=american' +
+    'regions=' + regions + '&markets=spreads&oddsFormat=american' +
     '&commenceTimeFrom=' + encodeURIComponent(from) +
     '&commenceTimeTo='   + encodeURIComponent(to) +
     '&apiKey=' + encodeURIComponent(apiKey) + bust;
